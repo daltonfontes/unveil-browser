@@ -1,0 +1,10 @@
+COMPANY_FULLNAME=Unveil
+COMPANY_SHORTNAME=Unveil
+PRODUCT_FULLNAME=Unveil
+PRODUCT_SHORTNAME=Unveil
+PRODUCT_INSTALLER_FULLNAME=Unveil Installer
+PRODUCT_INSTALLER_SHORTNAME=Unveil Installer
+COPYRIGHT=Copyright @LASTCHANGE_YEAR@ Unveil. Built on Chromium, copyright The Chromium Authors.
+MAC_BUNDLE_ID=dev.unveil.browser
+MAC_CREATOR_CODE=Unvl
+MAC_TEAM_ID=

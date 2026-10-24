@@ -1,0 +1,45 @@
+--- a/chrome/browser/ui/extensions/settings_overridden_params_providers.cc
++++ b/chrome/browser/ui/extensions/settings_overridden_params_providers.cc
+@@ -29,6 +29,7 @@
+ #include "chrome/browser/ui/extensions/settings_api_bubble_helpers.h"
+ #include "chrome/browser/ui/hats/survey_config.h"
+ #include "chrome/common/chrome_features.h"
++#include "chrome/common/extensions/extension_constants.h"
+ #include "chrome/common/extensions/manifest_handlers/settings_overrides_handler.h"
+ #include "chrome/common/url_constants.h"
+ #include "chrome/common/webui_url_constants.h"
+@@ -408,6 +409,12 @@
+     return std::nullopt;
+   }
+ 
++  // Unveil: the new tab page is the shell's own, so there is nothing to warn
++  // about, and "change it back" would turn off Unveil's shell.
++  if (extension->id() == extension_misc::kUnveilShellExtensionId) {
++    return std::nullopt;
++  }
++
+   // This preference tracks whether users have acknowledged the extension's
+   // control, so that they are not warned twice about the same extension.
+   const char* preference_name = extensions::kNtpOverridingExtensionAcknowledged;
+--- a/chrome/browser/ui/views/new_tab_footer/footer_controller.cc
++++ b/chrome/browser/ui/views/new_tab_footer/footer_controller.cc
+@@ -14,6 +14,7 @@
+ #include "chrome/browser/ui/views/new_tab_footer/footer_controller_observer.h"
+ #include "chrome/browser/ui/views/new_tab_footer/footer_web_view.h"
+ #include "chrome/browser/ui/webui/new_tab_footer/new_tab_footer_helper.h"
++#include "chrome/common/extensions/extension_constants.h"
+ #include "chrome/common/pref_names.h"
+ #include "components/prefs/pref_service.h"
+ #include "components/tabs/public/tab_interface.h"
+@@ -218,6 +219,11 @@
+     return false;
+   }
+ 
++  // Unveil: the shell's new tab page is Unveil's own, not one to attribute.
++  if (url.host() == extension_misc::kUnveilShellExtensionId) {
++    return false;
++  }
++
+   return ntp_footer::IsExtensionNtp(url, owner_->profile_) &&
+          owner_->profile_->GetPrefs()->GetBoolean(
+              prefs::kNTPFooterExtensionAttributionEnabled) &&

@@ -1,0 +1,51 @@
+--- a/chrome/install_static/chromium_install_modes.h
++++ b/chrome/install_static/chromium_install_modes.h
+@@ -21,7 +21,7 @@
+ 
+ // The brand-specific product name to be included as a component of the install
+ // and user data directory paths.
+-inline constexpr wchar_t kProductPathName[] = L"Chromium";
++inline constexpr wchar_t kProductPathName[] = L"Unveil";
+ 
+ // The brand-specific safe browsing client name.
+ inline constexpr char kSafeBrowsingName[] = "chromium";
+@@ -54,23 +54,26 @@
+         .logo_suffix = L"",  // No logo suffix for the primary install mode.
+         .app_guid =
+             L"",  // Empty app_guid since no integration with Google Update.
+-        .base_app_name = L"Chromium",              // A distinct base_app_name.
+-        .base_app_id = L"Chromium",                // A distinct base_app_id.
+-        .browser_prog_id_prefix = L"ChromiumHTM",  // Browser ProgID prefix.
++        // Unveil: its own names and IDs, so it installs and runs side by side
++        // with Chromium (registry keys, ProgIDs, notifications, the
++        // %LOCALAPPDATA%\Unveil\User Data profile folder).
++        .base_app_name = L"Unveil",              // A distinct base_app_name.
++        .base_app_id = L"Unveil",                // A distinct base_app_id.
++        .browser_prog_id_prefix = L"UnveilHTM",  // Browser ProgID prefix.
+         .browser_prog_id_description =
+-            L"Chromium HTML Document",  // Browser ProgID description.
+-        .direct_launch_url_scheme = "chromium",
+-        .pdf_prog_id_prefix = L"ChromiumPDF",  // PDF ProgID prefix.
++            L"Unveil HTML Document",  // Browser ProgID description.
++        .direct_launch_url_scheme = "unveil",
++        .pdf_prog_id_prefix = L"UnveilPDF",  // PDF ProgID prefix.
+         .pdf_prog_id_description =
+-            L"Chromium PDF Document",  // PDF ProgID description.
++            L"Unveil PDF Document",  // PDF ProgID description.
+         .active_setup_guid =
+-            L"{7D2B3E1D-D096-4594-9D8F-A6667F12E0AC}",  // Active Setup
++            L"{1314E901-8950-4C2D-8E55-36CA8F047EF9}",  // Active Setup
+                                                         // GUID.
+-        .toast_activator_clsid = {0x635EFA6F,
+-                                  0x08D6,
+-                                  0x4EC9,
+-                                  {0xBD, 0x14, 0x8A, 0x0F, 0xDE, 0x97, 0x51,
+-                                   0x59}},  // Toast Activator CLSID.
++        .toast_activator_clsid = {0xFD66FAA8,
++                                  0x2A5B,
++                                  0x4145,
++                                  {0xB2, 0x54, 0xBC, 0x5D, 0xED, 0x32, 0xAD,
++                                   0x23}},  // Toast Activator CLSID.
+         .elevator_clsid = {0xD133B120,
+                            0x6DB4,
+                            0x4D6B,

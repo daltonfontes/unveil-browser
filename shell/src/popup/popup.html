@@ -1,0 +1,37 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="ui.css">
+  <style>
+    body { width: 300px; padding: 14px 16px; background: var(--surface); }
+    header { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+    header img { border-radius: 7px; }
+    header strong { font-size: 15px; }
+    #site { color: var(--muted); word-break: break-all; margin: 0 0 4px; }
+    #count { font-size: 28px; font-weight: 600; margin: 8px 0 0; }
+    #count + small { color: var(--muted); }
+    #note { color: var(--muted); font-size: 12px; margin: 4px 0 0; }
+    a { color: var(--accent); }
+    footer { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); font-size: 12.5px; }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="icons/icon32.png" alt="" width="24" height="24">
+    <strong>Unveil</strong>
+  </header>
+  <p id="site"></p>
+  <div id="stats">
+    <p id="count">0</p>
+    <small data-i18n="blockedOnThisPage"></small>
+  </div>
+  <label class="switch" id="toggle-row">
+    <span data-i18n="protectionOnThisSite"></span>
+    <input type="checkbox" id="toggle">
+  </label>
+  <p id="note" hidden></p>
+  <footer><a href="options.html" target="_blank" data-i18n="openSettings"></a></footer>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title data-i18n="settingsTitle">Unveil settings</title>
+  <link rel="stylesheet" href="ui.css">
+  <style>
+    main { width: min(640px, calc(100% - 32px)); margin: 40px auto; }
+    h1 { font-size: 22px; display: flex; align-items: center; gap: 12px; }
+    h1 img { border-radius: 9px; }
+    h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 28px 0 8px; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 4px 16px; }
+    select { padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); }
+    ul { list-style: none; margin: 0; padding: 0; }
+    li { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; }
+    li + li { border-top: 1px solid var(--border); }
+    li button { border: 0; background: none; color: var(--accent); cursor: pointer; }
+    .empty { color: var(--muted); padding: 12px 0; }
+    p.about { color: var(--muted); font-size: 12.5px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1><img src="icons/icon48.png" alt="" width="36" height="36"><span data-i18n="settingsTitle"></span></h1>
+
+    <h2 data-i18n="sectionProtection"></h2>
+    <div class="card">
+      <label class="switch"><span><span data-i18n="blockAds"></span><small data-i18n="blockAdsHelp"></small></span><input type="checkbox" data-setting="blockAds"></label>
+      <label class="switch"><span><span data-i18n="blockTrackers"></span><small data-i18n="blockTrackersHelp"></small></span><input type="checkbox" data-setting="blockTrackers"></label>
+      <label class="switch"><span><span data-i18n="stripTrackingParams"></span><small data-i18n="stripTrackingParamsHelp"></small></span><input type="checkbox" data-setting="stripTrackingParams"></label>
+    </div>
+
+    <h2 data-i18n="sectionAllowedSites"></h2>
+    <div class="card"><ul id="allowed"></ul></div>
+
+    <h2 data-i18n="sectionNewTab"></h2>
+    <div class="card">
+      <label class="switch"><span><span data-i18n="searchEngine"></span><small data-i18n="searchEngineHelp"></small></span><select id="engine"></select></label>
+    </div>
+
+    <p class="about" data-i18n="aboutPrivacy"></p>
+  </main>
+  <script type="module" src="options.js"></script>
+</body>
+</html>

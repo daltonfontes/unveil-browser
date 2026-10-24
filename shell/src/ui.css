@@ -1,0 +1,39 @@
+/* Shared by the new tab page, the popup and the settings page. */
+:root {
+  color-scheme: light dark;
+  --bg: #f6f7fb;
+  --surface: #ffffff;
+  --text: #15182b;
+  --muted: #5d6275;
+  --border: #dfe2ec;
+  --accent: #0d6f80;
+  --accent-text: #ffffff;
+  --ok: #138a5b;
+  --off: #b4442c;
+  --radius: 12px;
+  font: 14px/1.45 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12141f;
+    --surface: #1b1e2c;
+    --text: #e8eaf3;
+    --muted: #9aa0b6;
+    --border: #2c3044;
+    --accent: #5fd3c2;
+    --accent-text: #0b1d22;
+    --ok: #4fd39a;
+    --off: #ff8a70;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); }
+button, input, select { font: inherit; color: inherit; }
+.switch { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0; }
+.switch + .switch { border-top: 1px solid var(--border); }
+.switch small { display: block; color: var(--muted); }
+.switch input { appearance: none; flex: none; width: 40px; height: 22px; border-radius: 11px; background: var(--border); position: relative; cursor: pointer; transition: background .15s; }
+.switch input::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform .15s; }
+.switch input:checked { background: var(--accent); }
+.switch input:checked::after { transform: translateX(18px); }
+.switch input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

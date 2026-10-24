@@ -1,0 +1,20 @@
+# Unveil dev build: component build, so a change relinks one small DLL instead
+# of the whole browser. build.ps1 writes this to out/Dev/args.gn. Use it day to
+# day; the shell loads from chromium/shell/dist (run.ps1).
+is_debug = false
+is_component_build = true
+dcheck_always_on = false
+symbol_level = 0
+blink_symbol_level = 0
+v8_symbol_level = 0
+target_cpu = "x64"
+proprietary_codecs = true
+ffmpeg_branding = "Chrome"
+use_remoteexec = false
+treat_warnings_as_errors = false
+# No Google API keys: sync and sign-in to Google stay off (patch 0006 drops
+# the infobar about it).
+google_api_key = ""
+google_default_client_id = ""
+google_default_client_secret = ""
+use_official_google_api_keys = false

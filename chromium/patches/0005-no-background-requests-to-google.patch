@@ -1,0 +1,30 @@
+--- a/chrome/app/chrome_main_delegate.cc
++++ b/chrome/app/chrome_main_delegate.cc
+@@ -1227,6 +1227,27 @@
+ #endif  // !defined(BUILDING_CHROME_RENDERER)
+ 
+ #if !defined(BUILDING_CHROME_RENDERER)
++  // Unveil: background requests to Google that Chromium makes on its own are
++  // off on every launch. Component updates (update.googleapis.com, with the
++  // browser's version and OS), Domain Reliability reports and hyperlink
++  // auditing pings (<a ping>). The browser process's switches are copied to
++  // the processes it starts, so this covers them too. The other defaults
++  // (search, cookies, Safe Browsing...) are preferences, in
++  // chromium/build/initial_preferences, so people can change them.
++  if (!command_line.HasSwitch(switches::kProcessType)) {
++    base::CommandLine* browser_command_line =
++        base::CommandLine::ForCurrentProcess();
++    for (const char* unveil_switch :
++         {switches::kDisableComponentUpdate,
++          switches::kDisableDomainReliability, switches::kNoPings}) {
++      if (!browser_command_line->HasSwitch(unveil_switch)) {
++        browser_command_line->AppendSwitch(unveil_switch);
++      }
++    }
++  }
++#endif  // !defined(BUILDING_CHROME_RENDERER)
++
++#if !defined(BUILDING_CHROME_RENDERER)
+   // The DevTools remote debugging pipe file descriptors need to be checked
+   // before any other files are opened, see https://crbug.com/40259890.
+   const bool is_browser = !command_line.HasSwitch(switches::kProcessType);

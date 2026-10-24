@@ -1,6 +1,0 @@
-# Unveil's patches, applied after ungoogled-chromium's and
-# ungoogled-chromium-windows' (build.py). Check them with tools/check_patches.py.
-unveil/0001-unveil-install-mode.patch
-unveil/0002-unveil-shell-component-extension.patch
-unveil/0003-package-the-shell-and-initial-preferences.patch
-unveil/0004-no-new-tab-page-warning-for-the-shell.patch

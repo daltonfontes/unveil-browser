@@ -66,6 +66,12 @@
     "default_path": "sidebar.html"
   },
   "commands": {
+    "toggle-sidebar": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+S"
+      },
+      "description": "__MSG_cmdToggleSidebar__"
+    },
     "next-space": {
       "suggested_key": {
         "default": "Alt+Shift+Down"

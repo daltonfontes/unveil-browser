@@ -285,6 +285,8 @@ $('#add-space').addEventListener('click', () => editSpace(null));
 // --- The rest ---------------------------------------------------------------
 
 $('#new-tab').addEventListener('click', () => run({ type: 'newTab', windowId }));
+// The same toggle as Ctrl+Shift+S, which brings it back.
+$('#collapse').addEventListener('click', () => run({ type: 'toggleSidebar', windowId }));
 
 archiveToggle.addEventListener('click', () => {
   showArchive = !showArchive;

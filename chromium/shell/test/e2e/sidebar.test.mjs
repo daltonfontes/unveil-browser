@@ -151,3 +151,32 @@ test('the side panel shows the sidebar page', async () => {
   const path = await worker.evaluate(async () => (await chrome.sidePanel.getOptions({})).path);
   assert.equal(path, 'sidebar.html');
 });
+
+test('Ctrl+Shift+S toggles the sidebar; the collapse button hides it', async () => {
+  const commands = await worker.evaluate(() => chrome.commands.getAll());
+  assert.equal(commands.find((c) => c.name === 'toggle-sidebar')?.shortcut, 'Ctrl+Shift+S');
+
+  // Open the side panel the way a person would: a click (a user gesture) in a
+  // page of that window. (Playwright's key presses don't reach the browser's
+  // shortcuts, so the toggle is driven by the collapse button, which runs the
+  // same code as the shortcut.)
+  const opener = await context.newPage();
+  await opener.goto(`chrome-extension://${SHELL_ID}/options.html`);
+  const openerWindow = await opener.evaluate(async () => (await chrome.windows.getCurrent()).id);
+  await opener.evaluate(() => {
+    const button = Object.assign(document.createElement('button'), { id: 'open-panel', textContent: 'open' });
+    button.onclick = async () => chrome.sidePanel.open({ windowId: (await chrome.windows.getCurrent()).id });
+    document.body.prepend(button);
+  });
+  await opener.click('#open-panel');
+  const openWindows = () => worker.evaluate(async () => (await chrome.storage.session.get('sidebarOpenWindows')).sidebarOpenWindows ?? []);
+  await eventually(async () => (await openWindows()).includes(openerWindow), 'the panel opens and is tracked');
+
+  const panelSidebar = await context.newPage();
+  await panelSidebar.goto(`chrome-extension://${SHELL_ID}/sidebar.html?window=${openerWindow}`);
+  await panelSidebar.waitForSelector('body[data-ready]');
+  await panelSidebar.click('#collapse');
+  await eventually(async () => !(await openWindows()).includes(openerWindow), 'the panel closes');
+  await panelSidebar.close();
+  await opener.close();
+});

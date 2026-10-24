@@ -196,5 +196,11 @@
   },
   "cmdPreviousSpace": {
     "message": "Previous Space"
+  },
+  "cmdToggleSidebar": {
+    "message": "Show or hide the sidebar"
+  },
+  "sidebarCollapse": {
+    "message": "Hide the sidebar (Ctrl+Shift+S)"
   }
 }

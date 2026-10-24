@@ -196,5 +196,11 @@
   },
   "cmdPreviousSpace": {
     "message": "Space anterior"
+  },
+  "cmdToggleSidebar": {
+    "message": "Mostrar ou recolher a barra lateral"
+  },
+  "sidebarCollapse": {
+    "message": "Recolher a barra (Ctrl+Shift+S)"
   }
 }

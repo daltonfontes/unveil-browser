@@ -1,0 +1,21 @@
+--- a/chrome/browser/ui/views/frame/browser_view.cc
++++ b/chrome/browser/ui/views/frame/browser_view.cc
+@@ -1425,6 +1425,18 @@
+ }
+ 
+ bool BrowserView::ShouldDrawTabStrip() const {
++  // Unveil: tabs live in the shell's sidebar (the side panel, see
++  // chromium/shell/src/sidebar), so normal windows draw no tab strip and the
++  // toolbar moves up beside the window controls, as with vertical tabs.
++  // Incognito windows keep Chromium's tab strip, and so does
++  // --unveil-show-tab-strip (handy when debugging).
++  if (browser_->GetType() == BrowserWindowInterface::Type::TYPE_NORMAL &&
++      !GetProfile()->IsOffTheRecord() &&
++      !base::CommandLine::ForCurrentProcess()->HasSwitch(
++          "unveil-show-tab-strip")) {
++    return false;
++  }
++
+   // Return false if this window does not normally display a tabstrip or if the
+   // tabstrip is currently hidden, e.g. because we're in fullscreen.
+   if (!WindowFeatureController::From(browser_)->SupportsWindowFeature(

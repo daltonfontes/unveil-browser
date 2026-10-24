@@ -1,0 +1,63 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Unveil</title>
+  <link rel="stylesheet" href="ui.css">
+  <link rel="stylesheet" href="sidebar.css">
+</head>
+<body>
+  <div id="sidebar">
+    <input id="search" type="search" spellcheck="false" autocomplete="off" data-i18n-placeholder="sidebarSearch">
+
+    <ul id="favorites" class="favorites" data-drop="favorite"></ul>
+
+    <section id="pinned-section" data-drop="pin">
+      <h2 data-i18n="sidebarPinned"></h2>
+      <ul id="pinned" class="list"></ul>
+      <p class="hint" id="pinned-hint" data-i18n="sidebarPinnedHint"></p>
+    </section>
+
+    <button id="new-tab" class="row new-tab"><span class="icon">+</span><span data-i18n="sidebarNewTab"></span></button>
+
+    <section id="today-section">
+      <h2 data-i18n="sidebarToday"></h2>
+      <ul id="today" class="list"></ul>
+    </section>
+
+    <section id="archive-section" hidden>
+      <h2><span data-i18n="sidebarArchive"></span></h2>
+      <ul id="archive" class="list"></ul>
+      <p class="hint" id="archive-empty" data-i18n="sidebarArchiveEmpty"></p>
+      <label class="archive-after"><span data-i18n="sidebarArchiveAfter"></span>
+        <select id="archive-hours"></select>
+      </label>
+      <button id="clear-archive" class="link" data-i18n="sidebarClearArchive"></button>
+    </section>
+
+    <footer>
+      <button id="archive-toggle" class="footer-button" data-i18n-title="sidebarArchive">🗄</button>
+      <div id="spaces" class="spaces"></div>
+      <button id="add-space" class="footer-button" data-i18n-title="sidebarNewSpace">+</button>
+    </footer>
+  </div>
+
+  <div id="menu" class="menu" role="menu" hidden></div>
+
+  <dialog id="space-dialog">
+    <form method="dialog">
+      <h3 id="space-dialog-title"></h3>
+      <label><span data-i18n="sidebarSpaceName"></span><input id="space-name" required maxlength="40"></label>
+      <label><span data-i18n="sidebarSpaceEmoji"></span><input id="space-emoji" maxlength="4"></label>
+      <div id="space-hues" class="hues" role="radiogroup"></div>
+      <div class="dialog-buttons">
+        <button type="button" id="space-delete" class="link danger" data-i18n="sidebarDeleteSpace"></button>
+        <button value="cancel" data-i18n="sidebarCancel"></button>
+        <button value="save" class="primary" data-i18n="sidebarSave"></button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="sidebar.js"></script>
+</body>
+</html>

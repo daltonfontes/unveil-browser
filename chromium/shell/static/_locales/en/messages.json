@@ -97,5 +97,104 @@
   },
   "aboutPrivacy": {
     "message": "Unveil sends nothing about you anywhere: no telemetry, no crash reports, no account. The block lists update with each Unveil release."
+  },
+  "sidebarSearch": {
+    "message": "Search tabs and archive"
+  },
+  "sidebarPinned": {
+    "message": "Pinned"
+  },
+  "sidebarPinnedHint": {
+    "message": "Drag a tab here, or right-click it, to pin it to this Space."
+  },
+  "sidebarNewTab": {
+    "message": "New tab"
+  },
+  "sidebarToday": {
+    "message": "Today"
+  },
+  "sidebarArchive": {
+    "message": "Archive"
+  },
+  "sidebarArchiveEmpty": {
+    "message": "Tabs you leave alone move here."
+  },
+  "sidebarArchiveAfter": {
+    "message": "Archive Today tabs"
+  },
+  "sidebarArchiveHours": {
+    "message": "after $1"
+  },
+  "sidebarHours": {
+    "message": "$1 hours"
+  },
+  "sidebarDays": {
+    "message": "$1 days"
+  },
+  "sidebarArchiveNever": {
+    "message": "never"
+  },
+  "sidebarClearArchive": {
+    "message": "Clear archive"
+  },
+  "sidebarNewSpace": {
+    "message": "New Space"
+  },
+  "sidebarEditSpace": {
+    "message": "Edit Space"
+  },
+  "sidebarDeleteSpace": {
+    "message": "Delete Space"
+  },
+  "sidebarSpaceName": {
+    "message": "Name"
+  },
+  "sidebarSpaceEmoji": {
+    "message": "Emoji"
+  },
+  "sidebarCancel": {
+    "message": "Cancel"
+  },
+  "sidebarSave": {
+    "message": "Save"
+  },
+  "sidebarClose": {
+    "message": "Close tab"
+  },
+  "sidebarUnload": {
+    "message": "Close (keep it saved)"
+  },
+  "sidebarPin": {
+    "message": "Pin to this Space"
+  },
+  "sidebarUnpin": {
+    "message": "Unpin"
+  },
+  "sidebarAddFavorite": {
+    "message": "Add to favorites"
+  },
+  "sidebarRemoveFavorite": {
+    "message": "Remove from favorites"
+  },
+  "sidebarMoveTo": {
+    "message": "Move to Space"
+  },
+  "sidebarDuplicate": {
+    "message": "Duplicate"
+  },
+  "sidebarCopyLink": {
+    "message": "Copy link"
+  },
+  "sidebarMute": {
+    "message": "Mute"
+  },
+  "sidebarUnmute": {
+    "message": "Unmute"
+  },
+  "cmdNextSpace": {
+    "message": "Next Space"
+  },
+  "cmdPreviousSpace": {
+    "message": "Previous Space"
   }
 }

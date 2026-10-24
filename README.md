@@ -2,7 +2,7 @@
 
 Um navegador leve e sem rastreamento para Windows, feito sobre um fork do Chromium.
 
-<p align="center"><img src="docs/screenshots/newtab-dark.png" alt="A nova guia do Unveil decodificando um JWT localmente" width="720"></p>
+<p align="center"><img src="docs/screenshots/sidebar-light.png" alt="A barra lateral do Unveil: favoritos, abas fixadas, Hoje e Spaces" width="260">&nbsp;&nbsp;<img src="docs/screenshots/sidebar-dark.png" alt="A barra lateral no tema escuro" width="260"></p>
 
 ## Por quê
 
@@ -11,6 +11,16 @@ O [Flecha](https://flecha.dev/pt-br/) mostrou que dá para fazer um navegador pr
 É o Chromium mesmo, e não um app Electron. As páginas renderizam igual ao Chrome, e as extensões da Chrome Web Store instalam normalmente.
 
 ## Recursos
+
+**Barra lateral vertical, como no Flecha**
+- As abas ficam numa barra à esquerda, e a faixa de abas horizontal some. A barra de endereço sobe para a linha dos botões da janela, então o navegador ganha espaço vertical.
+- **Favoritos** no topo, como ícones, em todos os Spaces. Clicar abre a página ou volta para a aba que já está aberta.
+- **Fixadas**: páginas salvas em cada Space. Fechar uma fixada fecha a aba, mas a entrada continua lá para reabrir.
+- **Hoje**: as outras abas do Space. As que ficam paradas vão sozinhas para o **arquivo**, depois de 12 horas por padrão (1 dia, 7 dias, 30 dias ou nunca). O arquivo tem busca e reabre a aba com um clique.
+- **Spaces** com nome, emoji e cor, que tinge a barra. Cada janela mostra um Space, e as abas dos outros ficam abertas fora de vista. Troque pelos botões no rodapé ou com Alt+Shift+↑/↓.
+- Pela busca da barra você filtra abas, fixadas, favoritos e o arquivo. Se nada bater, o Enter abre a busca, um endereço ou um comando (`gh`, `npm`...) numa aba nova.
+- Arraste uma aba para reordenar, para "Fixadas" para fixar ou para os favoritos para favoritar. O botão direito tem o resto: mover para outro Space, duplicar, copiar link, silenciar.
+- Janelas anônimas continuam com a faixa de abas do Chromium.
 
 **Sem rastreamento**
 - Sem atualizações de componentes do Google (`update.googleapis.com`), sem relatórios de Domain Reliability e sem pings de auditoria de links (`<a ping>`), em toda inicialização (patch 0005).
@@ -40,7 +50,7 @@ O [Flecha](https://flecha.dev/pt-br/) mostrou que dá para fazer um navegador pr
 - "Chromium" vira "Unveil" em todos os textos da interface, sem perder nenhuma tradução.
 - Interface própria em português e inglês, nos temas claro e escuro.
 
-<p align="center"><img src="docs/screenshots/settings.png" alt="Configurações do Unveil" width="720"></p>
+<p align="center"><img src="docs/screenshots/newtab-dark.png" alt="A nova guia do Unveil decodificando um JWT localmente" width="720"></p>
 
 ## Instalação
 
@@ -78,7 +88,7 @@ chromium\scripts\run.ps1           # abre out\Dev\chrome.exe com um perfil próp
 npm run shell:build                # mudou só a interface? recompile a shell e reabra o run.ps1
 npm run typecheck
 npm test                           # testes unitários
-npm run test:e2e                   # a shell num Chromium real: bloqueio, links, nova guia
+npm run test:e2e                   # a shell num Chromium real: bloqueio, links, nova guia, barra lateral
 ```
 
 Você pode rodar o `apply.ps1` quantas vezes quiser: ele desfaz a aplicação anterior antes de aplicar de novo. O build de desenvolvimento é um component build, então uma mudança só religa uma DLL pequena. O `run.ps1` carrega a shell de `chromium\shell\dist` pelo `--unveil-shell-dir`, então mexer na interface não exige compilar o Chromium (o `npm run shell:watch` recompila ao salvar).
@@ -113,6 +123,9 @@ chromium/
     build.mjs         bundle com esbuild; baixa e converte as listas de bloqueio
     abp2dnr.mjs       filtros Adblock Plus para regras declarativeNetRequest
     src/background.ts liga e desliga as regras conforme as configurações
+    src/sidebar/      a barra lateral: a página (sidebar.ts) e o seu lado no
+                      service worker (service.ts), único que grava o estado
+    src/lib/sidebarState.ts  Spaces, favoritos, fixadas, Hoje e arquivo
     src/newtab/       nova guia e caixa de comandos
     src/popup/        o botão da barra: bloqueios na página, proteção por site
     src/options/      configurações
@@ -127,15 +140,19 @@ O Unveil é o Chromium mais duas camadas: um conjunto pequeno de patches e uma e
 flowchart LR
   subgraph Chromium["Chromium 157 + patches do Unveil"]
     Loader["ComponentLoader<br/>(carrega a shell, 0002)"]
+    Frame["janela sem faixa de abas (0007),<br/>painel lateral à esquerda (0008)"]
     Switches["sem requisições de fundo<br/>ao Google (0005)"]
     DNR["declarativeNetRequest<br/>(regras nativas)"]
   end
   subgraph Shell["Shell (extensão-componente MV3)"]
-    BG["background.ts<br/>regras conforme as configurações"]
+    BG["background.ts<br/>regras, Spaces, arquivo"]
+    Sidebar["sidebar.html<br/>(no painel lateral)"]
     UI["nova guia, popup,<br/>configurações"]
   end
   Loader --> Shell
   BG --> DNR
+  Sidebar -- comandos --> BG
+  Frame --- Sidebar
 ```
 
 Os patches ficam pequenos e com um assunto cada, para que atualizar o Chromium continue fácil:
@@ -148,6 +165,9 @@ Os patches ficam pequenos e com um assunto cada, para que atualizar o Chromium c
 | 0004 | Tira o aviso de "uma extensão mudou sua nova guia" da nova guia do próprio Unveil |
 | 0005 | Desliga as requisições de fundo ao Google: atualização de componentes, Domain Reliability e `<a ping>` |
 | 0006 | Tira o aviso de "chaves de API do Google ausentes" |
+| 0007 | Janelas normais sem a faixa de abas: as abas ficam na barra lateral (`--unveil-show-tab-strip` traz a faixa de volta) |
+| 0008 | O painel lateral fica à esquerda por padrão |
+| 0009 | A shell abre a barra lateral em cada janela nova sem precisar de um clique |
 
 Para "Chromium" virar "Unveil" nos textos, o [`rebrand.mjs`](chromium/scripts/rebrand.mjs) precisa recalcular o ID de cada mensagem. As traduções (`.xtb`) são indexadas por uma impressão digital do texto em inglês, então o script calcula o ID novo do mesmo jeito que o GRIT do Chromium e move cada tradução para ele. Os testes conferem os IDs com valores calculados pelo próprio GRIT.
 
@@ -160,7 +180,8 @@ Para "Chromium" virar "Unveil" nos textos, o [`rebrand.mjs`](chromium/scripts/re
 
 ## Ainda não tem
 
-- Barra lateral vertical, Spaces, Peek e split view, como no Flecha. Isso pede patches na janela (views do Windows).
+- Peek, split view e cookies separados por Space, como no Flecha.
+- A barra usa o painel lateral do Chromium, que tem um cabeçalho com título e um botão de fechar. Se você fechar a barra, ela volta pelo menu do painel lateral ou numa janela nova. No Flecha, a janela inteira é desenhada pela shell.
 - Atualização automática: por enquanto, baixe a release nova.
 - Ocultar elementos de anúncio na página (filtros cosméticos `##`). Hoje o bloqueio é só de rede, então às vezes sobra um espaço vazio.
 - Builds para ARM64.

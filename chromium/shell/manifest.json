@@ -6,22 +6,77 @@
   "default_locale": "en",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxuqxDhMerEe00eYUR3g6MxBWTYNwlzbZz+MxlCUFI63totWCxoXCbhx7LoP2uaPAesOv7IFVyaTl8fVbhVG2U9WE33KgiJ2S6e7JesBRvgweAXSZ1ehQj5bfrlayOOH0K4wqO2qDyc1VBqE36db79XuoSJNT6mqlta1x5iP352Wyrx7xV4A73toze+J4YOxJmje4d7XT6eh1L3Wv8eAYUhm/K5E+iUNcIxup2nHuBolkEfnzr++lpBx6YYtFZKyEnVheMVEQk9d5GA4EMYl0grn0rQeH1lM3oqxIz7tHAOey6jP7yyTy/u5E/p8061gg0aaHFyF7Y2aKQe6qSISauQIDAQAB",
   "minimum_chrome_version": "120",
-  "permissions": ["declarativeNetRequest", "declarativeNetRequestFeedback", "storage", "tabs"],
-  "host_permissions": ["<all_urls>"],
-  "background": { "service_worker": "background.js", "type": "module" },
-  "chrome_url_overrides": { "newtab": "newtab.html" },
-  "options_ui": { "page": "options.html", "open_in_tab": true },
+  "permissions": [
+    "declarativeNetRequest",
+    "declarativeNetRequestFeedback",
+    "storage",
+    "tabs",
+    "sidePanel",
+    "alarms",
+    "favicon"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "chrome_url_overrides": {
+    "newtab": "newtab.html"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
   "action": {
     "default_title": "Unveil",
     "default_popup": "popup.html",
-    "default_icon": { "16": "icons/icon16.png", "32": "icons/icon32.png" }
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png"
+    }
   },
-  "icons": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png", "128": "icons/icon128.png" },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
   "declarative_net_request": {
     "rule_resources": [
-      { "id": "easylist", "enabled": true, "path": "rules/easylist.json" },
-      { "id": "easyprivacy", "enabled": true, "path": "rules/easyprivacy.json" },
-      { "id": "tracking_params", "enabled": true, "path": "rules/tracking_params.json" }
+      {
+        "id": "easylist",
+        "enabled": true,
+        "path": "rules/easylist.json"
+      },
+      {
+        "id": "easyprivacy",
+        "enabled": true,
+        "path": "rules/easyprivacy.json"
+      },
+      {
+        "id": "tracking_params",
+        "enabled": true,
+        "path": "rules/tracking_params.json"
+      }
     ]
+  },
+  "side_panel": {
+    "default_path": "sidebar.html"
+  },
+  "commands": {
+    "next-space": {
+      "suggested_key": {
+        "default": "Alt+Shift+Down"
+      },
+      "description": "__MSG_cmdNextSpace__"
+    },
+    "previous-space": {
+      "suggested_key": {
+        "default": "Alt+Shift+Up"
+      },
+      "description": "__MSG_cmdPreviousSpace__"
+    }
   }
 }

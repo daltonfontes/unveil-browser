@@ -39,7 +39,8 @@ export type SidebarCommand =
   | { type: 'reopenArchived'; windowId: number; index: number }
   | { type: 'clearArchive' }
   | { type: 'setArchiveHours'; hours: number }
-  | { type: 'archiveNow' };
+  | { type: 'archiveNow' }
+  | { type: 'toggleSidebar'; windowId: number };
 
 const ARCHIVE_ALARM = 'unveil-archive';
 
@@ -50,6 +51,30 @@ const isNormal = async (windowId: number) => {
     return false;
   }
 };
+
+// Windows whose sidebar is open, kept in memory so the toggle shortcut can
+// decide at once: sidePanel.open() must run within the key press (on a stock
+// Chromium; patch 0009 lifts that for the shell), so nothing may be awaited
+// before it. chrome.storage.session keeps it across service worker restarts.
+const OPEN_KEY = 'sidebarOpenWindows';
+const openWindows = new Set<number>();
+void chrome.storage.session.get(OPEN_KEY).then(({ [OPEN_KEY]: ids }) => {
+  for (const id of (ids as number[] | undefined) ?? []) openWindows.add(id);
+});
+function setOpen(windowId: number, open: boolean) {
+  if (open) openWindows.add(windowId);
+  else openWindows.delete(windowId);
+  void chrome.storage.session.set({ [OPEN_KEY]: [...openWindows] });
+}
+
+/** Shows or hides a window's sidebar (Ctrl+Shift+S). */
+function toggleSidebar(windowId: number) {
+  if (openWindows.has(windowId)) {
+    void chrome.sidePanel.close({ windowId }).catch(() => setOpen(windowId, false));
+  } else {
+    void openSidebar(windowId);
+  }
+}
 
 /** Opens the sidebar in a window (patch 0009 lets the shell do it unasked). */
 async function openSidebar(windowId: number) {
@@ -238,6 +263,8 @@ async function run(command: SidebarCommand): Promise<unknown> {
       });
     case 'archiveNow':
       return archive(true);
+    case 'toggleSidebar':
+      return toggleSidebar(command.windowId);
   }
 }
 
@@ -275,7 +302,10 @@ export function startSidebar() {
   chrome.windows.onCreated.addListener((window) => {
     if (window.type === 'normal' && window.id !== undefined) void openSidebar(window.id);
   });
+  chrome.sidePanel.onOpened.addListener(({ windowId }) => setOpen(windowId, true));
+  chrome.sidePanel.onClosed.addListener(({ windowId }) => setOpen(windowId, false));
   chrome.windows.onRemoved.addListener((windowId) => {
+    setOpen(windowId, false);
     void updateSession((s) => {
       delete s.windowSpace[windowId];
     });
@@ -312,6 +342,12 @@ export function startSidebar() {
   });
 
   chrome.commands.onCommand.addListener(async (command, tab) => {
+    if (command === 'toggle-sidebar') {
+      // No await before toggling: see openWindows.
+      if (tab?.windowId !== undefined) toggleSidebar(tab.windowId);
+      else void chrome.windows.getLastFocused().then((w) => w.id !== undefined && toggleSidebar(w.id));
+      return;
+    }
     if (command !== 'next-space' && command !== 'previous-space') return;
     const windowId = tab?.windowId ?? (await chrome.windows.getLastFocused()).id;
     if (windowId === undefined) return;

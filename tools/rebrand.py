@@ -4,9 +4,9 @@
 The product name lives in chrome/app/chromium_strings.grd and the parts it
 includes (window titles, the About page, menus, Settings, the installer). Its
 translations (.xtb) are keyed by a fingerprint of each English message, so
-changing the English text alone would lose every translation of it. This changes the English messages, then moves
-each translation to its message's new ID and renames it there too, with
-Chromium's own GRIT computing the IDs.
+changing the English text alone would lose every translation of it. This
+changes the English messages, then moves each translation to its message's new
+ID and renames it there too, with Chromium's own GRIT computing the IDs.
 
 "ChromiumOS", "Chromium OS" and "The Chromium Authors" stay as they are: they
 name other things. Runs on the source tree after the patches (build.py), and is

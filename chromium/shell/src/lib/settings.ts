@@ -14,6 +14,8 @@ export interface Settings {
   allowedSites: string[];
   /** The search engine of the new tab page's command box. */
   searchEngine: SearchEngine;
+  /** Links that open a new tab from a pinned tab or a favourite open in Peek. */
+  peekFromPinned: boolean;
 }
 
 export const DEFAULTS: Settings = {
@@ -22,6 +24,7 @@ export const DEFAULTS: Settings = {
   stripTrackingParams: true,
   allowedSites: [],
   searchEngine: 'duckduckgo',
+  peekFromPinned: true,
 };
 
 export const SEARCH_ENGINES: Record<SearchEngine, { name: string; url: string }> = {

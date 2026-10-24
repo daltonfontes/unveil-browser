@@ -214,5 +214,23 @@
   },
   "sidebarUnsplit": {
     "message": "Desfazer split view"
+  },
+  "peekOpenLink": {
+    "message": "Abrir no Peek"
+  },
+  "peekOpenAsTab": {
+    "message": "Abrir em aba"
+  },
+  "peekClose": {
+    "message": "Fechar (Esc)"
+  },
+  "sectionSidebar": {
+    "message": "Barra lateral"
+  },
+  "peekFromPinned": {
+    "message": "Peek nos links de abas fixadas"
+  },
+  "peekFromPinnedHelp": {
+    "message": "Links que abrem uma aba nova a partir de uma fixada ou de um favorito abrem numa janela flutuante. Esc ou um clique fora fecha."
   }
 }

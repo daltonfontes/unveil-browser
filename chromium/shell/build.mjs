@@ -58,6 +58,7 @@ const options = {
     popup: 'src/popup/popup.ts',
     options: 'src/options/options.ts',
     sidebar: 'src/sidebar/sidebar.ts',
+    'peek-overlay': 'src/peek/overlay.ts',
   },
   absWorkingDir: root,
   outdir: dist,

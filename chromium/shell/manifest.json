@@ -13,7 +13,9 @@
     "tabs",
     "sidePanel",
     "alarms",
-    "favicon"
+    "favicon",
+    "contextMenus",
+    "scripting"
   ],
   "host_permissions": [
     "<all_urls>"

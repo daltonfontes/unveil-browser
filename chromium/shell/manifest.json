@@ -83,6 +83,12 @@
         "default": "Alt+Shift+Up"
       },
       "description": "__MSG_cmdPreviousSpace__"
+    },
+    "split-view": {
+      "suggested_key": {
+        "default": "Alt+Shift+S"
+      },
+      "description": "__MSG_cmdSplitView__"
     }
   }
 }

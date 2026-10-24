@@ -180,3 +180,45 @@ test('Ctrl+Shift+S toggles the sidebar; the collapse button hides it', async () 
   await panelSidebar.close();
   await opener.close();
 });
+
+test('split view: a tab beside the current one shares its row; ending the split separates them', async () => {
+  const split = await worker.evaluate(() => typeof chrome.tabs.createSplit === 'function');
+  assert.ok(split, 'this Chromium has no split view API (chrome.tabs.createSplit): use Chromium 156 or newer');
+
+  await sidebar.locator('.space').first().click();
+  const [left, right] = await worker.evaluate(async ({ id, base }) => {
+    const right = await chrome.tabs.create({ windowId: id, url: `${base}/right`, active: false });
+    const left = await chrome.tabs.create({ windowId: id, url: `${base}/left`, active: true });
+    await new Promise((r) => setTimeout(r, 500));
+    return [left.id, right.id];
+  }, { id: windowId, base: `http://127.0.0.1:${port}` });
+  const splitIds = () => worker.evaluate((ids) => Promise.all(ids.map((i) => chrome.tabs.get(i).then((t) => t.splitViewId))), [left, right]);
+
+  await eventually(async () => (await todayTitles()).includes('Page right'), 'Page right shows');
+  await sidebar.locator('#today .row', { hasText: 'Page right' }).click({ button: 'right' });
+  await sidebar.locator('#menu button', { hasText: 'Open in split view with the current tab' }).click();
+  await eventually(async () => {
+    const [a, b] = await splitIds();
+    return a >= 0 && a === b;
+  }, `both tabs in one split: ${await splitIds()}`);
+  await eventually(async () => (await sidebar.locator('#today .split-group .row').allInnerTexts()).join().includes('Page left'), 'the split shares a row');
+  assert.deepEqual(await sidebar.locator('#today .split-group .row .title').allInnerTexts(), ['Page left', 'Page right']);
+
+  await sidebar.locator('#today .split-group .row', { hasText: 'Page right' }).click({ button: 'right' });
+  await sidebar.locator('#menu button', { hasText: 'End split view' }).click();
+  await eventually(async () => (await splitIds()).every((s) => s < 0), 'split ended');
+  await eventually(async () => (await sidebar.locator('#today .split-group').count()) === 0, 'rows separate again');
+});
+
+test('split view with a new tab, from the current tab\'s menu', async () => {
+  const before = (await tabsOfWindow()).length;
+  const active = (await tabsOfWindow()).find((t) => t.active);
+  await sidebar.locator('#today .row.active').click({ button: 'right' });
+  await sidebar.locator('#menu button', { hasText: 'Split view with a new tab' }).click();
+  await eventually(async () => (await tabsOfWindow()).length === before + 1, 'a new tab opens');
+  const splitOfActive = await worker.evaluate((id) => chrome.tabs.get(id).then((t) => t.splitViewId), active.id);
+  assert.ok(splitOfActive >= 0, 'the current tab is in a split');
+  await eventually(async () => (await sidebar.locator('#today .split-group .row').count()) === 2, 'the pair shares a row');
+  const commands = await worker.evaluate(() => chrome.commands.getAll());
+  assert.equal(commands.find((c) => c.name === 'split-view')?.shortcut, 'Alt+Shift+S');
+});

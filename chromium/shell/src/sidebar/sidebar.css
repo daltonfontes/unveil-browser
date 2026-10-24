@@ -82,3 +82,7 @@ button.link.danger { color: var(--off); }
 .archive-after { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 10px 8px 4px; color: var(--muted); font-size: 12px; }
 .archive-after select { padding: 3px 6px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); }
 .row .when { flex: none; color: var(--muted); font-size: 11px; }
+.split-group { display: flex; gap: 2px; padding: 2px; margin: 1px 0; border-radius: 10px; background: var(--row-hover); list-style: none; }
+.split-group.active { background: var(--row-active); box-shadow: var(--row-active-shadow); }
+.split-group .row { flex: 1; min-width: 0; padding-right: 2px; }
+.split-group .row.active { box-shadow: inset 0 0 0 1.5px hsl(var(--hue) 45% 45% / .55); }

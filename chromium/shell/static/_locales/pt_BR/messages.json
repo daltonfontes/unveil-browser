@@ -202,5 +202,17 @@
   },
   "sidebarCollapse": {
     "message": "Recolher a barra (Ctrl+Shift+S)"
+  },
+  "cmdSplitView": {
+    "message": "Split view: abrir uma aba ao lado desta, ou desfazer o split"
+  },
+  "sidebarSplitWithCurrent": {
+    "message": "Abrir em split view com a aba atual"
+  },
+  "sidebarSplitNew": {
+    "message": "Split view com uma nova aba"
+  },
+  "sidebarUnsplit": {
+    "message": "Desfazer split view"
   }
 }

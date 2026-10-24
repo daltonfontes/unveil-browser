@@ -40,7 +40,10 @@ export type SidebarCommand =
   | { type: 'clearArchive' }
   | { type: 'setArchiveHours'; hours: number }
   | { type: 'archiveNow' }
-  | { type: 'toggleSidebar'; windowId: number };
+  | { type: 'toggleSidebar'; windowId: number }
+  | { type: 'split'; windowId: number; tabId: number }
+  | { type: 'splitNew'; windowId: number }
+  | { type: 'unsplit'; tabId: number };
 
 const ARCHIVE_ALARM = 'unveil-archive';
 
@@ -84,6 +87,46 @@ async function openSidebar(windowId: number) {
     // Without patch 0009 (a stock Chromium), this needs a click: the toolbar
     // button's menu has "Open side panel".
   }
+}
+
+// Split view is Chromium's own (chrome.tabs.createSplit): two tabs side by side,
+// both on screen whenever either is active. They must be next to each other in
+// the same window, and not already in another split.
+const inSplit = (tab: chrome.tabs.Tab) => tab.splitViewId !== undefined && tab.splitViewId >= 0;
+
+async function activeTab(windowId: number) {
+  const [tab] = await chrome.tabs.query({ active: true, windowId });
+  return tab;
+}
+
+/** The window's active tab and `tabId`, side by side, `tabId` on the right. */
+async function splitWithActive(windowId: number, tabId: number) {
+  const current = await activeTab(windowId);
+  const activeId = current?.id;
+  if (activeId === undefined || activeId === tabId) return splitWithNewTab(windowId);
+  for (const tab of [current, await chrome.tabs.get(tabId)]) {
+    if (inSplit(tab)) await chrome.tabs.unsplit(tab.splitViewId!);
+  }
+  const active = await chrome.tabs.get(activeId);
+  const other = await chrome.tabs.get(tabId);
+  // Right after the active tab. (Moving a tab from before it shifts it left.)
+  const index = other.windowId === windowId && other.index < active.index ? active.index : active.index + 1;
+  await chrome.tabs.move(tabId, { windowId, index });
+  // Both halves belong to the active tab's Space.
+  const session = await getSession();
+  const spaceId = session.tabSpace[activeId] ?? (await windowSpaceId(windowId));
+  await updateSession((s) => {
+    s.tabSpace[tabId] = spaceId;
+  });
+  await chrome.tabs.createSplit([activeId, tabId]);
+}
+
+/** The active tab and a new tab (the new tab page) beside it. */
+async function splitWithNewTab(windowId: number) {
+  const active = await activeTab(windowId);
+  if (!active?.id) return;
+  if (inSplit(active)) await chrome.tabs.unsplit(active.splitViewId!);
+  await chrome.tabs.create({ windowId, splitWithTabId: active.id, active: true });
 }
 
 async function windowSpaceId(windowId: number) {
@@ -265,6 +308,14 @@ async function run(command: SidebarCommand): Promise<unknown> {
       return archive(true);
     case 'toggleSidebar':
       return toggleSidebar(command.windowId);
+    case 'split':
+      return splitWithActive(command.windowId, command.tabId);
+    case 'splitNew':
+      return splitWithNewTab(command.windowId);
+    case 'unsplit': {
+      const tab = await chrome.tabs.get(command.tabId);
+      return inSplit(tab) ? chrome.tabs.unsplit(tab.splitViewId!) : undefined;
+    }
   }
 }
 
@@ -346,6 +397,15 @@ export function startSidebar() {
       // No await before toggling: see openWindows.
       if (tab?.windowId !== undefined) toggleSidebar(tab.windowId);
       else void chrome.windows.getLastFocused().then((w) => w.id !== undefined && toggleSidebar(w.id));
+      return;
+    }
+    if (command === 'split-view') {
+      // Alt+Shift+S: split the current tab with a new one, or end its split.
+      const windowId = tab?.windowId ?? (await chrome.windows.getLastFocused()).id;
+      if (windowId === undefined) return;
+      const active = await activeTab(windowId);
+      if (active && inSplit(active)) await chrome.tabs.unsplit(active.splitViewId!);
+      else await splitWithNewTab(windowId);
       return;
     }
     if (command !== 'next-space' && command !== 'previous-space') return;

@@ -202,5 +202,17 @@
   },
   "sidebarCollapse": {
     "message": "Hide the sidebar (Ctrl+Shift+S)"
+  },
+  "cmdSplitView": {
+    "message": "Split view: open a tab beside this one, or end the split"
+  },
+  "sidebarSplitWithCurrent": {
+    "message": "Open in split view with the current tab"
+  },
+  "sidebarSplitNew": {
+    "message": "Split view with a new tab"
+  },
+  "sidebarUnsplit": {
+    "message": "End split view"
   }
 }

@@ -214,5 +214,23 @@
   },
   "sidebarUnsplit": {
     "message": "End split view"
+  },
+  "peekOpenLink": {
+    "message": "Open in Peek"
+  },
+  "peekOpenAsTab": {
+    "message": "Open as tab"
+  },
+  "peekClose": {
+    "message": "Close (Esc)"
+  },
+  "sectionSidebar": {
+    "message": "Sidebar"
+  },
+  "peekFromPinned": {
+    "message": "Peek links from pinned tabs"
+  },
+  "peekFromPinnedHelp": {
+    "message": "Links that open a new tab from a pinned tab or a favorite open in a floating window. Esc or a click outside closes it."
   }
 }

@@ -22,6 +22,7 @@ O [Flecha](https://flecha.dev/pt-br/) mostrou que dá para fazer um navegador pr
 - **Spaces** com nome, emoji e cor, que tinge a barra. Cada janela mostra um Space, e as abas dos outros ficam abertas fora de vista. Troque pelos botões no rodapé ou com Alt+Shift+↑/↓.
 - **Ctrl+Shift+S** recolhe a barra e a traz de volta, e o botão ⇤ no rodapé também recolhe. Recolhida, a página ocupa a janela toda ([prévia](docs/screenshots/window-collapsed-light.png)). Dá para trocar o atalho em `chrome://extensions/shortcuts`.
 - **Split view**: duas abas lado a lado na mesma janela ([prévia](docs/screenshots/window-split-light.png)), usando o split view do próprio Chromium, com a divisória arrastável. Clique com o botão direito numa aba e escolha "Abrir em split view com a aba atual", ou aperte **Alt+Shift+S** para abrir uma aba nova ao lado da atual (o mesmo atalho desfaz o split). Na barra, as duas metades dividem uma linha.
+- **Peek**: links que abrem numa aba nova a partir de uma fixada ou de um favorito abrem numa janela flutuante sobre a atual ([prévia](docs/screenshots/window-peek-light.png)). Qualquer link também tem "Abrir no Peek" no botão direito. Esc, o ✕ ou um clique na janela de trás fecha; "Abrir em aba" transforma em aba no mesmo Space. Dá para desligar o Peek automático nas configurações.
 - Pela busca da barra você filtra abas, fixadas, favoritos e o arquivo. Se nada bater, o Enter abre a busca, um endereço ou um comando (`gh`, `npm`...) numa aba nova.
 - Arraste uma aba para reordenar, para "Fixadas" para fixar ou para os favoritos para favoritar. O botão direito tem o resto: mover para outro Space, duplicar, copiar link, silenciar.
 - Janelas anônimas continuam com a faixa de abas do Chromium.
@@ -185,7 +186,8 @@ Para "Chromium" virar "Unveil" nos textos, o [`rebrand.mjs`](chromium/scripts/re
 
 ## Ainda não tem
 
-- Peek e cookies separados por Space, como no Flecha. O split view é de duas abas, o máximo do Chromium.
+- Cookies separados por Space, como no Flecha. O split view é de duas abas, o máximo do Chromium.
+- O Peek é uma janela pop-up do Chromium, e não uma camada desenhada dentro da janela, como no Flecha (o que exigiria uma moldura de janela própria, em C++). Quando um link de uma fixada abre o Peek, a aba nova que o Chromium cria aparece por um instante antes de virar o Peek.
 - A barra vive no painel lateral do Chromium (sem o cabeçalho, patch 0010), então o visual dela segue o do painel: largura pela borda, abrir e fechar como o Chromium faz. No Flecha, a janela inteira é desenhada pela shell, o que dá mais controle.
 - Atualização automática: por enquanto, baixe a release nova.
 - Ocultar elementos de anúncio na página (filtros cosméticos `##`). Hoje o bloqueio é só de rede, então às vezes sobra um espaço vazio.

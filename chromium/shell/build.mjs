@@ -57,6 +57,7 @@ const options = {
     newtab: 'src/newtab/newtab.ts',
     popup: 'src/popup/popup.ts',
     options: 'src/options/options.ts',
+    sidebar: 'src/sidebar/sidebar.ts',
   },
   absWorkingDir: root,
   outdir: dist,
@@ -71,7 +72,7 @@ const options = {
 async function copyStatic() {
   await cp(path.join(root, 'static'), dist, { recursive: true });
   for (const file of ['manifest.json', 'src/ui.css', 'src/newtab/newtab.html', 'src/newtab/newtab.css',
-    'src/popup/popup.html', 'src/options/options.html']) {
+    'src/popup/popup.html', 'src/options/options.html', 'src/sidebar/sidebar.html', 'src/sidebar/sidebar.css']) {
     await cp(path.join(root, file), path.join(dist, path.basename(file)));
   }
 }

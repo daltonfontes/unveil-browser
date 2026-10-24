@@ -97,5 +97,104 @@
   },
   "aboutPrivacy": {
     "message": "O Unveil não envia nada sobre você: sem telemetria, sem relatórios de falha, sem conta. As listas de bloqueio são atualizadas a cada versão do Unveil."
+  },
+  "sidebarSearch": {
+    "message": "Buscar abas e arquivo"
+  },
+  "sidebarPinned": {
+    "message": "Fixadas"
+  },
+  "sidebarPinnedHint": {
+    "message": "Arraste uma aba para cá, ou clique com o botão direito, para fixá-la neste Space."
+  },
+  "sidebarNewTab": {
+    "message": "Nova aba"
+  },
+  "sidebarToday": {
+    "message": "Hoje"
+  },
+  "sidebarArchive": {
+    "message": "Arquivo"
+  },
+  "sidebarArchiveEmpty": {
+    "message": "As abas que você deixa de lado vêm para cá."
+  },
+  "sidebarArchiveAfter": {
+    "message": "Arquivar abas de Hoje"
+  },
+  "sidebarArchiveHours": {
+    "message": "depois de $1"
+  },
+  "sidebarHours": {
+    "message": "$1 horas"
+  },
+  "sidebarDays": {
+    "message": "$1 dias"
+  },
+  "sidebarArchiveNever": {
+    "message": "nunca"
+  },
+  "sidebarClearArchive": {
+    "message": "Limpar arquivo"
+  },
+  "sidebarNewSpace": {
+    "message": "Novo Space"
+  },
+  "sidebarEditSpace": {
+    "message": "Editar Space"
+  },
+  "sidebarDeleteSpace": {
+    "message": "Excluir Space"
+  },
+  "sidebarSpaceName": {
+    "message": "Nome"
+  },
+  "sidebarSpaceEmoji": {
+    "message": "Emoji"
+  },
+  "sidebarCancel": {
+    "message": "Cancelar"
+  },
+  "sidebarSave": {
+    "message": "Salvar"
+  },
+  "sidebarClose": {
+    "message": "Fechar aba"
+  },
+  "sidebarUnload": {
+    "message": "Fechar (continua salva)"
+  },
+  "sidebarPin": {
+    "message": "Fixar neste Space"
+  },
+  "sidebarUnpin": {
+    "message": "Desafixar"
+  },
+  "sidebarAddFavorite": {
+    "message": "Adicionar aos favoritos"
+  },
+  "sidebarRemoveFavorite": {
+    "message": "Remover dos favoritos"
+  },
+  "sidebarMoveTo": {
+    "message": "Mover para o Space"
+  },
+  "sidebarDuplicate": {
+    "message": "Duplicar"
+  },
+  "sidebarCopyLink": {
+    "message": "Copiar link"
+  },
+  "sidebarMute": {
+    "message": "Silenciar"
+  },
+  "sidebarUnmute": {
+    "message": "Reativar som"
+  },
+  "cmdNextSpace": {
+    "message": "Próximo Space"
+  },
+  "cmdPreviousSpace": {
+    "message": "Space anterior"
   }
 }

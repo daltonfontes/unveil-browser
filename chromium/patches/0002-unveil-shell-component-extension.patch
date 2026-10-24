@@ -1,0 +1,169 @@
+--- a/chrome/common/extensions/extension_constants.h
++++ b/chrome/common/extensions/extension_constants.h
+@@ -46,6 +46,13 @@
+ inline constexpr char kDictationConnectorExtensionId[] =
+     "kbglekiebdohdafflpmiejhbfdmjdbbe";
+ 
++// Unveil's shell (chromium/shell in the Unveil repo): ad and tracker blocking,
++// the new tab page and Unveil's settings. Its ID comes from the "key" in its
++// manifest.json, so it is the same wherever it loads from. Change both
++// together.
++inline constexpr char kUnveilShellExtensionId[] =
++    "cdpknnidfjopheidjbploffefndegnlp";
++
+ // The extension id of the Google Maps application.
+ inline constexpr char kGoogleMapsAppId[] = "lneaknkopdijkpnocmklfnjbeapigfbh";
+ 
+--- a/chrome/browser/extensions/component_extensions_allowlist/allowlist.cc
++++ b/chrome/browser/extensions/component_extensions_allowlist/allowlist.cc
+@@ -62,6 +62,9 @@
+ #if !BUILDFLAG(IS_ANDROID)
+       extension_misc::kIndigoExtensionId,
+       extension_misc::kDictationConnectorExtensionId,
++      // Unveil's shell, a component extension so that it can't be removed or
++      // turned off (ComponentLoader::AddUnveilShellExtension).
++      extension_misc::kUnveilShellExtensionId,
+ #endif  // !BUILDFLAG(IS_ANDROID)
+   });
+ 
+--- a/chrome/browser/extensions/component_loader.h
++++ b/chrome/browser/extensions/component_loader.h
+@@ -10,6 +10,7 @@
+ #include <optional>
+ #include <string>
+ #include <string_view>
++#include <utility>
+ #include <vector>
+ 
+ #include "base/files/file_path.h"
+@@ -239,6 +240,15 @@
+ 
+   void AddContextualTasksExtension();
+ 
++  // Unveil: the shell extension, from --unveil-shell-dir=<dir> (dev builds:
++  // chromium/shell/dist, so shell changes need no C++ build) or else the
++  // unveil_shell folder next to chrome.dll, copied into the user data folder.
++  // As a component extension it can't be removed, turned off or seen in
++  // chrome://extensions.
++  void AddUnveilShellExtension();
++  void FinishAddUnveilShell(
++      std::pair<base::FilePath, std::optional<base::DictValue>> shell);
++
+   void AddWithNameAndDescription(int manifest_resource_id,
+                                  const base::FilePath& root_directory,
+                                  const std::string& name_string,
+--- a/chrome/browser/extensions/component_loader.cc
++++ b/chrome/browser/extensions/component_loader.cc
+@@ -8,6 +8,7 @@
+ #include <string>
+ #include <string_view>
+ 
++#include "base/base_paths.h"
+ #include "base/command_line.h"
+ #include "base/feature_list.h"
+ #include "base/files/file_util.h"
+@@ -573,6 +574,94 @@
+   }
+ }
+ 
++namespace {
++
++// Unveil: the shell's manifest and the folder to load it from. A packaged
++// shell is copied into the user data folder first (once per shell version),
++// because declarativeNetRequest writes its indexed rulesets into the
++// extension's own folder, and the install folder can be read-only (a
++// system-level install in Program Files).
++std::pair<base::FilePath, std::optional<base::DictValue>> PrepareUnveilShell(
++    const base::FilePath& dir,
++    bool copy_to_user_data) {
++  std::string error;
++  std::optional<base::DictValue> manifest =
++      file_util::LoadManifest(dir, &error);
++  if (!manifest) {
++    LOG(ERROR) << "Unveil's shell couldn't load from " << dir << ": " << error;
++    return {dir, std::nullopt};
++  }
++  base::FilePath user_data;
++  const std::string* version = manifest->FindString(manifest_keys::kVersion);
++  if (!copy_to_user_data || !version ||
++      !base::PathService::Get(chrome::DIR_USER_DATA, &user_data)) {
++    return {dir, std::move(manifest)};
++  }
++  const base::FilePath copies =
++      user_data.Append(FILE_PATH_LITERAL("Unveil Shell"));
++  const base::FilePath copy = copies.AppendASCII(*version);
++  if (base::PathExists(copy.Append(kManifestFilename))) {
++    return {copy, std::move(manifest)};
++  }
++  // Older versions' copies go; this one is copied beside and moved in, so a
++  // half-made copy is never loaded.
++  base::DeletePathRecursively(copies);
++  const base::FilePath partial = copies.AppendASCII(*version + ".partial");
++  if (!base::CreateDirectory(copies) ||
++      !base::CopyDirectory(dir, partial, /*recursive=*/true) ||
++      !base::Move(partial, copy)) {
++    LOG(ERROR) << "Unveil's shell couldn't be copied to " << copy
++               << "; loading it from " << dir;
++    base::DeletePathRecursively(partial);
++    return {dir, std::move(manifest)};
++  }
++  return {copy, std::move(manifest)};
++}
++
++}  // namespace
++
++void ComponentLoader::AddUnveilShellExtension() {
++  const base::CommandLine* command_line =
++      base::CommandLine::ForCurrentProcess();
++  base::FilePath dir = command_line->GetSwitchValuePath("unveil-shell-dir");
++  // A dev build's shell/dist is writable and changes in place, so it loads
++  // from where it is.
++  const bool copy_to_user_data = dir.empty();
++  if (dir.empty()) {
++    // Release builds carry the shell beside chrome.dll (the unveil_shell_dir
++    // GN arg in chrome/BUILD.gn, and chrome.release for the installer).
++    if (!base::PathService::Get(base::DIR_ASSETS, &dir)) {
++      return;
++    }
++    dir = dir.Append(FILE_PATH_LITERAL("unveil_shell"));
++  }
++  if (!dir.IsAbsolute()) {
++    LOG(ERROR) << "--unveil-shell-dir must be an absolute path: " << dir;
++    return;
++  }
++  // The files are read and copied on the extension file task runner; Add() in
++  // the reply loads the shell straight away if the extension system is ready.
++  GetExtensionFileTaskRunner()->PostTaskAndReplyWithResult(
++      FROM_HERE, base::BindOnce(&PrepareUnveilShell, dir, copy_to_user_data),
++      base::BindOnce(&ComponentLoader::FinishAddUnveilShell,
++                     weak_factory_.GetWeakPtr()));
++}
++
++void ComponentLoader::FinishAddUnveilShell(
++    std::pair<base::FilePath, std::optional<base::DictValue>> shell) {
++  auto& [dir, manifest] = shell;
++  if (!manifest) {
++    return;
++  }
++  const ExtensionId id =
++      Add(std::move(*manifest), dir, /*skip_allowlist=*/false);
++  if (id != extension_misc::kUnveilShellExtensionId) {
++    LOG(ERROR) << "Unveil's shell at " << dir << " has the id " << id
++               << "; its manifest key must give "
++               << extension_misc::kUnveilShellExtensionId;
++  }
++}
++
+ void ComponentLoader::AddWithNameAndDescription(
+     int manifest_resource_id,
+     const base::FilePath& root_directory,
+@@ -783,6 +872,9 @@
+   AddAimEligibilityExtension();
+   AddGlicExtension();
+   AddContextualTasksExtension();
++  if (!skip_session_components) {
++    AddUnveilShellExtension();
++  }
+ 
+ // http://crbug.com/41070702
+ #if BUILDFLAG(GOOGLE_CHROME_BRANDING) && !BUILDFLAG(IS_CHROMEOS)

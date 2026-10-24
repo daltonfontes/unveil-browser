@@ -1,5 +1,7 @@
-# Quick checks on every push and pull request, on Linux in a few minutes, so a
-# broken patch or shell shows up before a day-long Windows build.
+# Quick checks on every push and pull request, on Linux in a few minutes: the
+# patches still apply to the pinned Chromium, and the shell typechecks, passes
+# its tests and works in a real Chromium. The browser itself is built on
+# Windows with chromium/scripts/build-release.ps1.
 name: check
 on:
   push:
@@ -9,33 +11,19 @@ permissions:
   contents: read
 
 jobs:
-  patches:
+  check:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          submodules: recursive
-      - uses: actions/setup-python@v7
-        with:
-          python-version: '3.12'
-      - name: Unveil's patches apply to the pinned Chromium
-        run: python3 tools/check_patches.py
-
-  shell:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: shell
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: shell/package-lock.json
       - run: npm ci
+      - name: Patches apply to the pinned Chromium
+        run: npm run check-patches
       - run: npm run typecheck
       - run: npm test
-      - run: npm run build
+      - run: npm run shell:build
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e

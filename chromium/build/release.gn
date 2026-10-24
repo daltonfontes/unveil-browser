@@ -1,0 +1,33 @@
+# Unveil release build: one chrome.dll, what we ship. build-release.ps1 writes
+# this to out/Release/args.gn (UNVEIL_OFFICIAL=1 adds is_official_build, which
+# turns on ThinLTO: smaller and faster, but needs ~64 GB of RAM to link).
+is_debug = false
+is_component_build = false
+dcheck_always_on = false
+symbol_level = 0
+blink_symbol_level = 0
+v8_symbol_level = 0
+target_cpu = "x64"
+# H.264 and AAC, so video plays everywhere. (Redistributing them can need
+# patent licences: set both to false/"Chromium" for a build you sell.)
+proprietary_codecs = true
+ffmpeg_branding = "Chrome"
+use_remoteexec = false
+# Our patches shouldn't fail a multi-hour build over a warning.
+treat_warnings_as_errors = false
+# No PGO profiles in this checkout (they come with checkout_pgo_profiles).
+chrome_pgo_phase = 0
+
+# Privacy: no Google API keys (no sync or sign-in to Google), no field trial
+# configs baked in, no Hangouts helper extension.
+google_api_key = ""
+google_default_client_id = ""
+google_default_client_secret = ""
+use_official_google_api_keys = false
+disable_fieldtrial_testing_config = true
+enable_hangout_services_extension = false
+
+# The shell and the privacy defaults, staged into the checkout by
+# build-release.ps1 and copied beside chrome.exe (patch 0003).
+unveil_shell_dir = "//unveil/shell"
+unveil_initial_preferences = "//unveil/initial_preferences"

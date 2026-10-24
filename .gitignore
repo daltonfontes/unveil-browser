@@ -1,3 +1,6 @@
-# build.py: the Chromium checkout, downloads and packages (100+ GB)
-/build/
-__pycache__/
+node_modules/
+# The built shell and the block lists it downloads
+chromium/shell/dist/
+chromium/shell/.cache/
+# Release packages (chromium/scripts/package-release.ps1)
+/dist/

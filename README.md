@@ -20,7 +20,7 @@ O [Flecha](https://flecha.dev/pt-br/) mostrou que dá para fazer um navegador pr
 - **Fixadas**: páginas salvas em cada Space. Fechar uma fixada fecha a aba, mas a entrada continua lá para reabrir.
 - **Hoje**: as outras abas do Space. As que ficam paradas vão sozinhas para o **arquivo**, depois de 12 horas por padrão (1 dia, 7 dias, 30 dias ou nunca). O arquivo tem busca e reabre a aba com um clique.
 - **Spaces** com nome, emoji e cor, que tinge a barra. Cada janela mostra um Space, e as abas dos outros ficam abertas fora de vista. Troque pelos botões no rodapé ou com Alt+Shift+↑/↓.
-- **Ctrl+Shift+S** recolhe a barra e a traz de volta, e o botão ⇤ no rodapé também recolhe. Recolhida, a página ocupa a janela toda. Dá para trocar o atalho em `chrome://extensions/shortcuts`.
+- **Ctrl+Shift+S** recolhe a barra e a traz de volta, e o botão ⇤ no rodapé também recolhe. Recolhida, a página ocupa a janela toda ([prévia](docs/screenshots/window-collapsed-light.png)). Dá para trocar o atalho em `chrome://extensions/shortcuts`.
 - Pela busca da barra você filtra abas, fixadas, favoritos e o arquivo. Se nada bater, o Enter abre a busca, um endereço ou um comando (`gh`, `npm`...) numa aba nova.
 - Arraste uma aba para reordenar, para "Fixadas" para fixar ou para os favoritos para favoritar. O botão direito tem o resto: mover para outro Space, duplicar, copiar link, silenciar.
 - Janelas anônimas continuam com a faixa de abas do Chromium.

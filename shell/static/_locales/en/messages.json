@@ -1,0 +1,101 @@
+{
+  "extName": {
+    "message": "Unveil"
+  },
+  "extDescription": {
+    "message": "Unveil's ad and tracker blocking, new tab page and settings."
+  },
+  "newTabTitle": {
+    "message": "New Tab"
+  },
+  "commandPlaceholder": {
+    "message": "Search, type an address or a command"
+  },
+  "commandHint": {
+    "message": "gh owner/repo · npm package · mdn, caniuse, so + words · paste a JWT or a Unix timestamp"
+  },
+  "protectionOn": {
+    "message": "Ad and tracker blocking is on"
+  },
+  "protectionOff": {
+    "message": "Ad and tracker blocking is off"
+  },
+  "jwtHeader": {
+    "message": "JWT header"
+  },
+  "jwtPayload": {
+    "message": "JWT payload (decoded here, never sent)"
+  },
+  "jwtExpires": {
+    "message": "Expires"
+  },
+  "jwtExpired": {
+    "message": "Expired"
+  },
+  "timestampLocal": {
+    "message": "Local time"
+  },
+  "blockedOnThisPage": {
+    "message": "ads and trackers blocked on this page"
+  },
+  "protectionOnThisSite": {
+    "message": "Protection on this site"
+  },
+  "openSettings": {
+    "message": "Settings"
+  },
+  "notAWebPage": {
+    "message": "Nothing to block on this page."
+  },
+  "reloadingOn": {
+    "message": "Protection back on. Reloading…"
+  },
+  "reloadingOff": {
+    "message": "Protection off for this site. Reloading…"
+  },
+  "settingsTitle": {
+    "message": "Unveil settings"
+  },
+  "sectionProtection": {
+    "message": "Protection"
+  },
+  "blockAds": {
+    "message": "Block ads"
+  },
+  "blockAdsHelp": {
+    "message": "EasyList, matched natively by the browser."
+  },
+  "blockTrackers": {
+    "message": "Block trackers"
+  },
+  "blockTrackersHelp": {
+    "message": "EasyPrivacy: analytics, tracking pixels and fingerprinting scripts."
+  },
+  "stripTrackingParams": {
+    "message": "Remove tracking from links"
+  },
+  "stripTrackingParamsHelp": {
+    "message": "Strips utm_*, fbclid, gclid and similar from the pages you open."
+  },
+  "sectionAllowedSites": {
+    "message": "Sites with protection off"
+  },
+  "noAllowedSites": {
+    "message": "None. Turn protection off for a site from the Unveil button in the toolbar."
+  },
+  "turnProtectionBackOn": {
+    "message": "Turn protection back on"
+  },
+  "sectionNewTab": {
+    "message": "New tab"
+  },
+  "searchEngine": {
+    "message": "Search engine"
+  },
+  "searchEngineHelp": {
+    "message": "For the new tab's search box. The address bar's is in chrome://settings/search."
+  },
+  "aboutPrivacy": {
+    "message": "Unveil sends nothing about you anywhere: no telemetry, no crash reports, no account. The block lists update with each Unveil release."
+  }
+}

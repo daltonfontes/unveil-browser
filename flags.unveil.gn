@@ -1,0 +1,8 @@
+# Unveil's GN args, added after ungoogled-chromium's flags.gn and
+# ungoogled-chromium-windows' flags.windows.gn (build.py).
+
+# The shell extension and the privacy defaults, staged into the source tree by
+# build.py and copied beside chrome.exe (patch 0003).
+unveil_shell_dir = "//unveil/shell"
+unveil_initial_preferences = "//unveil/initial_preferences"
+

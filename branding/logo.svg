@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1b1f3b"/>
+      <stop offset="1" stop-color="#0d4f5c"/>
+    </linearGradient>
+    <linearGradient id="veil" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7cf2d4"/>
+      <stop offset="1" stop-color="#3fb8e8"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="240" height="240" rx="56" fill="url(#bg)"/>
+  <!-- The veil, lifted: an arc over the eye -->
+  <path d="M40 132 C 70 70, 186 70, 216 132" fill="none" stroke="url(#veil)" stroke-width="18" stroke-linecap="round"/>
+  <!-- The eye beneath it -->
+  <path d="M56 150 C 88 196, 168 196, 200 150" fill="none" stroke="#e8f6ff" stroke-width="14" stroke-linecap="round"/>
+  <circle cx="128" cy="146" r="26" fill="#e8f6ff"/>
+  <circle cx="128" cy="146" r="11" fill="#1b1f3b"/>
+</svg>

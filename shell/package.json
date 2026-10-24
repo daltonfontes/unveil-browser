@@ -1,0 +1,24 @@
+{
+  "name": "unveil-shell",
+  "version": "0.1.0",
+  "private": true,
+  "license": "BSD-3-Clause",
+  "description": "Unveil's built-in extension: ad and tracker blocking, the new tab page and settings.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "watch": "node scripts/build.mjs --watch",
+    "typecheck": "tsc -p .",
+    "test": "node --test \"test/unit/*.test.*\"",
+    "test:e2e": "node --test \"test/e2e/*.test.*\""
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.3.6",
+    "esbuild": "^0.28.2",
+    "playwright": "^1.63.0",
+    "typescript": "^7.0.2"
+  }
+}

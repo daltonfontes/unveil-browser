@@ -1,0 +1,23 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title data-i18n="newTabTitle">New Tab</title>
+  <link rel="stylesheet" href="ui.css">
+  <link rel="stylesheet" href="newtab.css">
+</head>
+<body>
+  <main>
+    <img class="logo" src="icons/icon128.png" alt="" width="72" height="72">
+    <form id="command" autocomplete="off">
+      <input id="input" type="text" spellcheck="false" autofocus data-i18n-placeholder="commandPlaceholder" aria-describedby="hint">
+    </form>
+    <p id="hint" class="hint" data-i18n="commandHint"></p>
+    <section id="result" hidden></section>
+  </main>
+  <footer>
+    <a id="protection" href="options.html"></a>
+  </footer>
+  <script type="module" src="newtab.js"></script>
+</body>
+</html>

@@ -1,0 +1,101 @@
+{
+  "extName": {
+    "message": "Unveil"
+  },
+  "extDescription": {
+    "message": "Bloqueio de anúncios e rastreadores, nova guia e configurações do Unveil."
+  },
+  "newTabTitle": {
+    "message": "Nova guia"
+  },
+  "commandPlaceholder": {
+    "message": "Pesquise, digite um endereço ou um comando"
+  },
+  "commandHint": {
+    "message": "gh dono/repo · npm pacote · mdn, caniuse, so + termos · cole um JWT ou um timestamp Unix"
+  },
+  "protectionOn": {
+    "message": "Bloqueio de anúncios e rastreadores ativo"
+  },
+  "protectionOff": {
+    "message": "Bloqueio de anúncios e rastreadores desligado"
+  },
+  "jwtHeader": {
+    "message": "Cabeçalho do JWT"
+  },
+  "jwtPayload": {
+    "message": "Payload do JWT (decodificado aqui, nunca enviado)"
+  },
+  "jwtExpires": {
+    "message": "Expira em"
+  },
+  "jwtExpired": {
+    "message": "Expirou em"
+  },
+  "timestampLocal": {
+    "message": "Horário local"
+  },
+  "blockedOnThisPage": {
+    "message": "anúncios e rastreadores bloqueados nesta página"
+  },
+  "protectionOnThisSite": {
+    "message": "Proteção neste site"
+  },
+  "openSettings": {
+    "message": "Configurações"
+  },
+  "notAWebPage": {
+    "message": "Nada para bloquear nesta página."
+  },
+  "reloadingOn": {
+    "message": "Proteção reativada. Recarregando…"
+  },
+  "reloadingOff": {
+    "message": "Proteção desligada neste site. Recarregando…"
+  },
+  "settingsTitle": {
+    "message": "Configurações do Unveil"
+  },
+  "sectionProtection": {
+    "message": "Proteção"
+  },
+  "blockAds": {
+    "message": "Bloquear anúncios"
+  },
+  "blockAdsHelp": {
+    "message": "EasyList, aplicada nativamente pelo navegador."
+  },
+  "blockTrackers": {
+    "message": "Bloquear rastreadores"
+  },
+  "blockTrackersHelp": {
+    "message": "EasyPrivacy: analytics, pixels de rastreamento e scripts de fingerprinting."
+  },
+  "stripTrackingParams": {
+    "message": "Remover rastreamento dos links"
+  },
+  "stripTrackingParamsHelp": {
+    "message": "Tira utm_*, fbclid, gclid e parecidos das páginas que você abre."
+  },
+  "sectionAllowedSites": {
+    "message": "Sites com a proteção desligada"
+  },
+  "noAllowedSites": {
+    "message": "Nenhum. Desligue a proteção de um site pelo botão do Unveil na barra de ferramentas."
+  },
+  "turnProtectionBackOn": {
+    "message": "Reativar proteção"
+  },
+  "sectionNewTab": {
+    "message": "Nova guia"
+  },
+  "searchEngine": {
+    "message": "Mecanismo de pesquisa"
+  },
+  "searchEngineHelp": {
+    "message": "Para a caixa da nova guia. O da barra de endereços fica em chrome://settings/search."
+  },
+  "aboutPrivacy": {
+    "message": "O Unveil não envia nada sobre você: sem telemetria, sem relatórios de falha, sem conta. As listas de bloqueio são atualizadas a cada versão do Unveil."
+  }
+}

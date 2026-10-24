@@ -125,9 +125,20 @@ function entryRow(entry: Entry, tab: Tab | undefined, kind: 'pinned' | 'favorite
 
 type MenuItem = { label: string; action: () => void } | 'separator' | { heading: string };
 
+const inSplit = (tab: Tab) => tab.splitViewId !== undefined && tab.splitViewId >= 0;
+
+function splitItems(tab: Tab): MenuItem[] {
+  if (inSplit(tab)) return [{ label: t('sidebarUnsplit'), action: () => run({ type: 'unsplit', tabId: tab.id! }) }];
+  return [tab.active
+    ? { label: t('sidebarSplitNew'), action: () => run({ type: 'splitNew', windowId }) }
+    : { label: t('sidebarSplitWithCurrent'), action: () => run({ type: 'split', windowId, tabId: tab.id! }) }];
+}
+
 function tabMenu(tab: Tab): MenuItem[] {
   const others = data.spaces.filter((s) => s.id !== spaceOf(data, session, windowId).id);
   return [
+    ...splitItems(tab),
+    'separator',
     { label: t('sidebarPin'), action: () => run({ type: 'pin', tabId: tab.id! }) },
     { label: t('sidebarAddFavorite'), action: () => run({ type: 'favorite', tabId: tab.id! }) },
     ...(others.length
@@ -334,7 +345,13 @@ function render() {
   pinnedHint.hidden = pinned.length > 0 || !!query;
 
   const todays = today.filter((tab) => !query || matches(query, tab.title, tab.url));
-  todayList.replaceChildren(...todays.map(tabRow));
+  todayList.replaceChildren(...splitGroups(todays).map((group) => {
+    if (group.length === 1) return tabRow(group[0]);
+    // A split's two tabs share one row, left and right, like the window.
+    const box = el('li', { className: `split-group${group.some((tab) => tab.active) ? ' active' : ''}` });
+    box.append(...group.map(tabRow));
+    return box;
+  }));
 
   // The archive shows when asked for, and while searching (to find old tabs).
   const archived = query ? searchArchive(data.archive, query).slice(0, 30) : data.archive;
@@ -361,6 +378,17 @@ function render() {
     button.addEventListener('contextmenu', (e) => openMenu(e, spaceMenu(s)));
     return button;
   }));
+}
+
+/** Today tabs in order, the two tabs of each split together. */
+function splitGroups(list: Tab[]): Tab[][] {
+  const groups: Tab[][] = [];
+  for (const tab of list) {
+    const last = groups.at(-1);
+    if (last && inSplit(tab) && last[0].splitViewId === tab.splitViewId) last.push(tab);
+    else groups.push([tab]);
+  }
+  return groups;
 }
 
 // Redraw on any change, batched: a page load alone sends a dozen tab updates.

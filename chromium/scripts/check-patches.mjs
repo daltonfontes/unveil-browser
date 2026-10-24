@@ -31,11 +31,26 @@ export function patchTargets(text) {
   return [...targets];
 }
 
-async function fetchOk(url) {
-  const response = await fetch(url);
-  if (response.status === 404) return null;
-  if (!response.ok) throw new Error(`${url}: HTTP ${response.status}`);
-  return response;
+// Gitiles answers 429 or 5xx now and then, and drops a connection under load:
+// those are tried again, after 1, 2, 4 and 8 seconds.
+const RETRY_DELAYS = [1000, 2000, 4000, 8000];
+
+export async function fetchOk(url, { fetchImpl = fetch, delays = RETRY_DELAYS } = {}) {
+  for (let attempt = 0; ; attempt++) {
+    let response;
+    try {
+      response = await fetchImpl(url);
+    } catch (error) {
+      if (attempt >= delays.length) throw error;
+    }
+    if (response) {
+      if (response.status === 404) return null;
+      if (response.ok) return response;
+      const temporary = response.status === 429 || response.status >= 500;
+      if (!temporary || attempt >= delays.length) throw new Error(`${url}: HTTP ${response.status}`);
+    }
+    await new Promise((resolve) => setTimeout(resolve, delays[attempt]));
+  }
 }
 
 async function commitFor(version, cache) {

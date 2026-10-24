@@ -2,7 +2,9 @@
 
 Um navegador leve e sem rastreamento para Windows, feito sobre um fork do Chromium.
 
-<p align="center"><img src="docs/screenshots/sidebar-light.png" alt="A barra lateral do Unveil: favoritos, abas fixadas, Hoje e Spaces" width="260">&nbsp;&nbsp;<img src="docs/screenshots/sidebar-dark.png" alt="A barra lateral no tema escuro" width="260"></p>
+<p align="center"><img src="docs/screenshots/window-light.png" alt="A janela do Unveil: barra de endereço na linha dos botões da janela, barra lateral à esquerda com favoritos, fixadas, Hoje e Spaces" width="840"></p>
+
+<p align="center"><sub>Prévia: a barra lateral é a real; a linha de cima simula o que os patches 0007 e 0008 fazem na janela.</sub></p>
 
 ## Por quê
 

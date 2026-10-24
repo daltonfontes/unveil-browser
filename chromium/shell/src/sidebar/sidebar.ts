@@ -20,6 +20,7 @@ import {
   type SidebarData,
   type Space,
 } from '../lib/sidebarState.ts';
+import { canSeparate, partitionFor } from '../lib/partitions.ts';
 import { send } from './client.ts';
 
 type Tab = chrome.tabs.Tab;
@@ -168,6 +169,14 @@ function entryMenu(entry: Entry, tab: Tab | undefined): MenuItem[] {
 function spaceMenu(space: Space): MenuItem[] {
   return [
     { label: t('sidebarEditSpace'), action: () => editSpace(space) },
+    ...(partitionFor(space)
+      ? [{
+          label: t('sidebarClearSpaceCookies'),
+          action: () => {
+            if (confirm(t('sidebarClearSpaceCookiesConfirm', space.name))) run({ type: 'clearSpaceCookies', spaceId: space.id });
+          },
+        }]
+      : []),
     ...(data.spaces.length > 1 ? [{ label: t('sidebarDeleteSpace'), action: () => run({ type: 'deleteSpace', spaceId: space.id }) }] : []),
   ];
 }
@@ -275,6 +284,10 @@ function editSpace(space: Space | null) {
   $<HTMLInputElement>('#space-name').value = space?.name ?? '';
   $<HTMLInputElement>('#space-emoji').value = space?.emoji ?? '✨';
   $('#space-delete').hidden = !space || data.spaces.length < 2;
+  const separate = $<HTMLInputElement>('#space-separate');
+  separate.checked = !!space?.separateCookies;
+  separate.disabled = !canSeparate();
+  $('#space-separate-hint').textContent = t(canSeparate() ? 'sidebarSeparateCookiesHint' : 'sidebarSeparateCookiesUnavailable');
   drawHues();
   dialog.showModal();
 }
@@ -284,8 +297,9 @@ dialog.addEventListener('close', () => {
   const name = $<HTMLInputElement>('#space-name').value.trim();
   const emoji = $<HTMLInputElement>('#space-emoji').value.trim() || '✨';
   if (!name) return;
-  if (editing) run({ type: 'editSpace', spaceId: editing.id, name, emoji, hue: chosenHue });
-  else run({ type: 'addSpace', windowId, name, emoji, hue: chosenHue });
+  const separateCookies = $<HTMLInputElement>('#space-separate').checked;
+  if (editing) run({ type: 'editSpace', spaceId: editing.id, name, emoji, hue: chosenHue, separateCookies });
+  else run({ type: 'addSpace', windowId, name, emoji, hue: chosenHue, separateCookies });
 });
 $('#space-delete').addEventListener('click', () => {
   if (editing) run({ type: 'deleteSpace', spaceId: editing.id });
@@ -372,7 +386,11 @@ function render() {
   }
 
   spacesBar.replaceChildren(...data.spaces.map((s) => {
-    const button = el('button', { className: `space${s.id === space.id ? ' current' : ''}`, textContent: s.emoji, title: s.name });
+    const button = el('button', {
+      className: `space${s.id === space.id ? ' current' : ''}${s.separateCookies ? ' separate' : ''}`,
+      textContent: s.emoji,
+      title: s.separateCookies ? `${s.name} · ${t('sidebarSeparateCookiesBadge')}` : s.name,
+    });
     button.addEventListener('click', () => run({ type: 'switchSpace', windowId, spaceId: s.id }));
     button.addEventListener('dblclick', () => editSpace(s));
     button.addEventListener('contextmenu', (e) => openMenu(e, spaceMenu(s)));

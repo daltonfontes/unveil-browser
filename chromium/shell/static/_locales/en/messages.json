@@ -232,5 +232,28 @@
   },
   "peekFromPinnedHelp": {
     "message": "Links that open a new tab from a pinned tab or a favorite open in a floating window. Esc or a click outside closes it."
+  },
+  "sidebarSeparateCookies": {
+    "message": "Separate cookies and logins"
+  },
+  "sidebarSeparateCookiesHint": {
+    "message": "Sites in this Space get cookies of their own: sign in to a different account in each Space."
+  },
+  "sidebarSeparateCookiesUnavailable": {
+    "message": "Only in the Unveil browser."
+  },
+  "sidebarSeparateCookiesBadge": {
+    "message": "separate cookies"
+  },
+  "sidebarClearSpaceCookies": {
+    "message": "Sign out of everything in this Space"
+  },
+  "sidebarClearSpaceCookiesConfirm": {
+    "message": "Remove the cookies, logins and site data of “$name$”?",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
   }
 }

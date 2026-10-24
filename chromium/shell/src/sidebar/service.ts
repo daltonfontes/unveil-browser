@@ -5,6 +5,8 @@
 // It also keeps the bookkeeping up to date as tabs come and go: a new tab
 // joins its window's Space, switching to a tab of another Space (Ctrl+Tab)
 // switches the window's Space, and Today tabs left alone archive themselves.
+// Tabs of a Space with separate cookies open in its storage partition, and
+// move to another partition when they change Space (reconcile()).
 
 import {
   addToArchive,
@@ -20,6 +22,7 @@ import {
   type Entry,
   type SidebarData,
 } from '../lib/sidebarState.ts';
+import { canReopen, canSeparate, clearSpace, createTabIn, openedByShell, partitionFor, tabPartition } from '../lib/partitions.ts';
 
 export type SidebarCommand =
   | { type: 'activate'; tabId: number }
@@ -33,9 +36,10 @@ export type SidebarCommand =
   | { type: 'moveTab'; tabId: number; toIndex: number }
   | { type: 'moveToSpace'; tabId: number; spaceId: string }
   | { type: 'switchSpace'; windowId: number; spaceId: string }
-  | { type: 'addSpace'; windowId: number; name: string; emoji: string; hue: number }
-  | { type: 'editSpace'; spaceId: string; name: string; emoji: string; hue: number }
+  | { type: 'addSpace'; windowId: number; name: string; emoji: string; hue: number; separateCookies?: boolean }
+  | { type: 'editSpace'; spaceId: string; name: string; emoji: string; hue: number; separateCookies?: boolean }
   | { type: 'deleteSpace'; spaceId: string }
+  | { type: 'clearSpaceCookies'; spaceId: string }
   | { type: 'reopenArchived'; windowId: number; index: number }
   | { type: 'clearArchive' }
   | { type: 'setArchiveHours'; hours: number }
@@ -111,14 +115,15 @@ async function splitWithActive(windowId: number, tabId: number) {
   const other = await chrome.tabs.get(tabId);
   // Right after the active tab. (Moving a tab from before it shifts it left.)
   const index = other.windowId === windowId && other.index < active.index ? active.index : active.index + 1;
-  await chrome.tabs.move(tabId, { windowId, index });
-  // Both halves belong to the active tab's Space.
+  // Both halves belong to the active tab's Space, and so to its partition.
   const session = await getSession();
   const spaceId = session.tabSpace[activeId] ?? (await windowSpaceId(windowId));
   await updateSession((s) => {
     s.tabSpace[tabId] = spaceId;
   });
-  await chrome.tabs.createSplit([activeId, tabId]);
+  const half = (await reconcile([tabId])).get(tabId) ?? tabId;
+  await chrome.tabs.move(half, { windowId, index });
+  await chrome.tabs.createSplit([activeId, half]);
 }
 
 /** The active tab and a new tab (the new tab page) beside it. */
@@ -126,7 +131,78 @@ async function splitWithNewTab(windowId: number) {
   const active = await activeTab(windowId);
   if (!active?.id) return;
   if (inSplit(active)) await chrome.tabs.unsplit(active.splitViewId!);
-  await chrome.tabs.create({ windowId, splitWithTabId: active.id, active: true });
+  const data = await getData();
+  const spaceId = (await getSession()).tabSpace[active.id] ?? (await windowSpaceId(windowId));
+  const partition = partitionFor(data.spaces.find((s) => s.id === spaceId));
+  if (!partition) {
+    await chrome.tabs.create({ windowId, splitWithTabId: active.id, active: true });
+    return;
+  }
+  // unveilPrivate.createTab() has no splitWithTabId: open it, then split.
+  const tabId = await openInSpace(windowId, spaceId);
+  await chrome.tabs.move(tabId, { windowId, index: active.index + 1 });
+  await chrome.tabs.createSplit([active.id, tabId]);
+}
+
+/** Opens a tab in a Space: in its storage partition, and in its bookkeeping. */
+async function openInSpace(windowId: number, spaceId: string, url?: string, entryId?: string) {
+  const space = (await getData()).spaces.find((s) => s.id === spaceId);
+  const tabId = await createTabIn({ windowId, url, active: true }, partitionFor(space));
+  await updateSession((s) => {
+    s.tabSpace[tabId] = spaceId;
+    if (entryId) s.tabEntry[tabId] = entryId;
+  });
+  return tabId;
+}
+
+const NEW_TAB_URLS = ['chrome://newtab', chrome.runtime.getURL('newtab.html')];
+
+// One reconcile() at a time, so a tab isn't reopened twice.
+let reconciling: Promise<unknown> = Promise.resolve();
+
+/**
+ * Tabs in another partition than their Space's are closed and opened again
+ * in the right one, at the same place and address (a tab can't change
+ * partition). Resolves to the new tab of each one reopened, by old ID. Tabs
+ * in a split stay, as do pages that can't open again (chrome:// pages).
+ */
+function reconcile(tabIds: number[]): Promise<Map<number, number>> {
+  const run = reconciling.then(async () => {
+    const reopened = new Map<number, number>();
+    if (!canSeparate() || !tabIds.length) return reopened;
+    const data = await getData();
+    const session = await getSession();
+    for (const tabId of tabIds) {
+      const tab = await chrome.tabs.get(tabId).catch(() => undefined);
+      if (!tab || inSplit(tab) || !(await isNormal(tab.windowId))) continue;
+      const space = data.spaces.find((s) => s.id === session.tabSpace[tabId]) ?? data.spaces[0];
+      const want = partitionFor(space);
+      const have = await tabPartition(tabId);
+      const url = tab.url || tab.pendingUrl;
+      if (have === undefined || have === want || !canReopen(url, NEW_TAB_URLS)) continue;
+      const start = !url || NEW_TAB_URLS.some((u) => url.startsWith(u));
+      const id = await createTabIn({ windowId: tab.windowId, url: start ? undefined : url, active: tab.active }, want);
+      await chrome.tabs.move(id, { index: tab.index }).catch(() => {});
+      await updateSession((s) => {
+        s.tabSpace[id] = space.id;
+        if (s.tabEntry[tabId]) s.tabEntry[id] = s.tabEntry[tabId];
+        s.lastActive[id] = s.lastActive[tabId] ?? Date.now();
+      });
+      await chrome.tabs.remove(tabId).catch(() => {});
+      reopened.set(tabId, id);
+    }
+    return reopened;
+  });
+  reconciling = run.catch(() => {});
+  return run;
+}
+
+/** Every open tab of a Space. */
+async function tabsOfSpace(spaceId: string) {
+  const data = await getData();
+  const session = await getSession();
+  const tabs = await chrome.tabs.query({ windowType: 'normal' });
+  return tabs.filter((t) => t.id !== undefined && (session.tabSpace[t.id] ?? data.spaces[0].id) === spaceId).map((t) => t.id!);
 }
 
 async function windowSpaceId(windowId: number) {
@@ -148,12 +224,7 @@ async function openEntry(windowId: number, entryId: string) {
       // The tab is gone: open a new one below.
     }
   }
-  const tab = await chrome.tabs.create({ windowId, url: entry.url, active: true });
-  const spaceId = spaceOf(data, session, windowId).id;
-  await updateSession((s) => {
-    s.tabEntry[tab.id!] = entryId;
-    s.tabSpace[tab.id!] = spaceId;
-  });
+  await openInSpace(windowId, spaceOf(data, session, windowId).id, entry.url, entryId);
 }
 
 /** An entry from a tab: its URL and title as they are now. */
@@ -193,13 +264,8 @@ async function run(command: SidebarCommand): Promise<unknown> {
     }
     case 'close':
       return chrome.tabs.remove(command.tabId);
-    case 'newTab': {
-      const tab = await chrome.tabs.create({ windowId: command.windowId, url: command.url, active: true });
-      const spaceId = await windowSpaceId(command.windowId);
-      return updateSession((s) => {
-        s.tabSpace[tab.id!] = spaceId;
-      });
-    }
+    case 'newTab':
+      return openInSpace(command.windowId, await windowSpaceId(command.windowId), command.url);
     case 'openEntry':
       return openEntry(command.windowId, command.entryId);
     case 'unloadEntry': {
@@ -239,9 +305,10 @@ async function run(command: SidebarCommand): Promise<unknown> {
     case 'moveTab':
       return chrome.tabs.move(command.tabId, { index: command.toIndex });
     case 'moveToSpace':
-      return updateSession((s) => {
+      await updateSession((s) => {
         s.tabSpace[command.tabId] = command.spaceId;
       });
+      return reconcile([command.tabId]);
     case 'switchSpace': {
       await updateSession((s) => {
         s.windowSpace[command.windowId] = command.spaceId;
@@ -260,15 +327,19 @@ async function run(command: SidebarCommand): Promise<unknown> {
     case 'addSpace': {
       const id = newId();
       await updateData((d) => {
-        d.spaces.push({ id, name: command.name, emoji: command.emoji, hue: command.hue });
+        d.spaces.push({ id, name: command.name, emoji: command.emoji, hue: command.hue, separateCookies: !!command.separateCookies });
       });
       return run({ type: 'switchSpace', windowId: command.windowId, spaceId: id });
     }
-    case 'editSpace':
-      return updateData((d) => {
+    case 'editSpace': {
+      const { name, emoji, hue, separateCookies } = command;
+      await updateData((d) => {
         const space = d.spaces.find((s) => s.id === command.spaceId);
-        if (space) Object.assign(space, { name: command.name, emoji: command.emoji, hue: command.hue });
+        if (space) Object.assign(space, { name, emoji, hue, ...(separateCookies === undefined ? {} : { separateCookies }) });
       });
+      // Separate cookies on or off: its tabs open again in the other partition.
+      return reconcile(await tabsOfSpace(command.spaceId));
+    }
     case 'deleteSpace': {
       // Its tabs move to the first Space, and its pinned entries go.
       const data = await getData();
@@ -278,14 +349,29 @@ async function run(command: SidebarCommand): Promise<unknown> {
         delete d.pinned[command.spaceId];
       });
       const first = (await getData()).spaces[0].id;
-      return updateSession((s) => {
+      const moved: number[] = [];
+      await updateSession((s) => {
         for (const [tabId, spaceId] of Object.entries(s.tabSpace)) {
-          if (spaceId === command.spaceId) s.tabSpace[tabId] = first;
+          if (spaceId !== command.spaceId) continue;
+          s.tabSpace[tabId] = first;
+          moved.push(Number(tabId));
         }
         for (const [windowId, spaceId] of Object.entries(s.windowSpace)) {
           if (spaceId === command.spaceId) s.windowSpace[windowId] = first;
         }
       });
+      // Its tabs open again in the first Space's partition; its own goes.
+      await reconcile(moved);
+      return clearSpace(command.spaceId);
+    }
+    case 'clearSpaceCookies': {
+      // "Sign out of this Space": everything sites stored in it goes, and its
+      // pages load again without it.
+      await clearSpace(command.spaceId);
+      for (const tabId of await tabsOfSpace(command.spaceId)) {
+        if ((await tabPartition(tabId)) === command.spaceId) await chrome.tabs.reload(tabId).catch(() => {});
+      }
+      return;
     }
     case 'reopenArchived': {
       const data = await getData();
@@ -337,6 +423,9 @@ async function adoptOpenTabs(data: SidebarData) {
   for (const window of await chrome.windows.getAll({ windowTypes: ['normal'] })) {
     if (window.id !== undefined) await openSidebar(window.id);
   }
+  // Restored tabs open in the profile's storage: those of a Space with
+  // separate cookies go back to its partition.
+  await reconcile(tabs.map((t) => t.id!).filter((id) => id !== undefined));
 }
 
 export function startSidebar() {
@@ -366,11 +455,15 @@ export function startSidebar() {
     if (tab.id === undefined || !(await isNormal(tab.windowId))) return;
     const data = await getData();
     // A link opened from a tab stays in that tab's Space.
-    void updateSession((s) => {
+    await updateSession((s) => {
       const opener = tab.openerTabId === undefined ? undefined : s.tabSpace[tab.openerTabId];
       s.tabSpace[tab.id!] ??= opener ?? spaceOf(data, s, tab.windowId).id;
       s.lastActive[tab.id!] = Date.now();
     });
+    // A tab the browser opened on its own (Ctrl+T, a restored tab) is in the
+    // profile's storage: in a Space with separate cookies, it opens again in
+    // the Space's. A link's tab is in its page's partition already (patch 0012).
+    if (tab.openerTabId === undefined && canSeparate() && !(await openedByShell(tab.id))) void reconcile([tab.id]);
   });
   chrome.tabs.onRemoved.addListener((tabId) => {
     void updateSession((s) => forgetTab(s, tabId));
@@ -378,9 +471,10 @@ export function startSidebar() {
   chrome.tabs.onAttached.addListener(async (tabId, { newWindowId }) => {
     // A tab dragged into another window joins that window's Space.
     const data = await getData();
-    void updateSession((s) => {
+    await updateSession((s) => {
       s.tabSpace[tabId] = spaceOf(data, s, newWindowId).id;
     });
+    void reconcile([tabId]);
   });
   chrome.tabs.onActivated.addListener(async ({ tabId, windowId }) => {
     const data = await getData();

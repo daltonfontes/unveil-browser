@@ -51,9 +51,11 @@
       <label><span data-i18n="sidebarSpaceName"></span><input id="space-name" required maxlength="40"></label>
       <label><span data-i18n="sidebarSpaceEmoji"></span><input id="space-emoji" maxlength="4"></label>
       <div id="space-hues" class="hues" role="radiogroup"></div>
+      <label class="check"><input type="checkbox" id="space-separate"><span data-i18n="sidebarSeparateCookies"></span></label>
+      <p class="hint" id="space-separate-hint"></p>
       <div class="dialog-buttons">
         <button type="button" id="space-delete" class="link danger" data-i18n="sidebarDeleteSpace"></button>
-        <button value="cancel" data-i18n="sidebarCancel"></button>
+        <button value="cancel" formnovalidate data-i18n="sidebarCancel"></button>
         <button value="save" class="primary" data-i18n="sidebarSave"></button>
       </div>
     </form>

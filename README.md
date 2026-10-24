@@ -20,6 +20,7 @@ O [Flecha](https://flecha.dev/pt-br/) mostrou que dá para fazer um navegador pr
 - **Fixadas**: páginas salvas em cada Space. Fechar uma fixada fecha a aba, mas a entrada continua lá para reabrir.
 - **Hoje**: as outras abas do Space. As que ficam paradas vão sozinhas para o **arquivo**, depois de 12 horas por padrão (1 dia, 7 dias, 30 dias ou nunca). O arquivo tem busca e reabre a aba com um clique.
 - **Spaces** com nome, emoji e cor, que tinge a barra. Cada janela mostra um Space, e as abas dos outros ficam abertas fora de vista. Troque pelos botões no rodapé ou com Alt+Shift+↑/↓.
+- **Cookies e logins separados por Space**, como no Flecha: marque a opção ao criar ou editar um Space e os sites dele ganham cookies, armazenamento e cache próprios, guardados no disco. Dá para entrar com uma conta do trabalho num Space e com a pessoal em outro, na mesma janela. Mover uma aba para um Space com outros cookies reabre a aba lá, no mesmo endereço. O botão direito no Space tem "Sair de todas as contas deste Space", e excluir o Space apaga os dados dele.
 - **Ctrl+Shift+S** recolhe a barra e a traz de volta, e o botão ⇤ no rodapé também recolhe. Recolhida, a página ocupa a janela toda ([prévia](docs/screenshots/window-collapsed-light.png)). Dá para trocar o atalho em `chrome://extensions/shortcuts`.
 - **Split view**: duas abas lado a lado na mesma janela ([prévia](docs/screenshots/window-split-light.png)), usando o split view do próprio Chromium, com a divisória arrastável. Clique com o botão direito numa aba e escolha "Abrir em split view com a aba atual", ou aperte **Alt+Shift+S** para abrir uma aba nova ao lado da atual (o mesmo atalho desfaz o split). Na barra, as duas metades dividem uma linha.
 - **Peek**: links que abrem numa aba nova a partir de uma fixada ou de um favorito abrem numa janela flutuante sobre a atual ([prévia](docs/screenshots/window-peek-light.png)). Qualquer link também tem "Abrir no Peek" no botão direito. Esc, o ✕ ou um clique na janela de trás fecha; "Abrir em aba" transforma em aba no mesmo Space. Dá para desligar o Peek automático nas configurações.
@@ -131,6 +132,7 @@ chromium/
     src/sidebar/      a barra lateral: a página (sidebar.ts) e o seu lado no
                       service worker (service.ts), único que grava o estado
     src/lib/sidebarState.ts  Spaces, favoritos, fixadas, Hoje e arquivo
+    src/lib/partitions.ts    em que partição de armazenamento cada aba abre
     src/newtab/       nova guia e caixa de comandos
     src/popup/        o botão da barra: bloqueios na página, proteção por site
     src/options/      configurações
@@ -174,6 +176,10 @@ Os patches ficam pequenos e com um assunto cada, para que atualizar o Chromium c
 | 0008 | O painel lateral fica à esquerda por padrão |
 | 0009 | A shell abre a barra lateral em cada janela nova sem precisar de um clique |
 | 0010 | A barra ocupa o painel lateral inteiro, sem o cabeçalho do Chromium (título, fixar e fechar) |
+| 0011 | `chrome.unveilPrivate`, só para a shell: abrir uma aba numa partição de armazenamento, saber em qual partição uma aba está e apagar uma partição |
+| 0012 | Cookies separados por Space: abas e janelas que uma página abre ficam na partição dela, e a limpeza de partições do Chromium não apaga as dos Spaces |
+
+Os patches 0011 e 0012 seguem os patches 0010 e 0034 do Flecha. Cada Space com cookies separados é uma `StoragePartition` persistente (`SiteInstance::CreateForFixedStoragePartition`), em `<perfil>/Storage/ext/unveil-space/`. É uma partição e não um perfil por Space porque um perfil tem extensões e janelas próprias: a barra e os Spaces teriam que ser divididos entre perfis, e as abas de Spaces diferentes não poderiam ficar na mesma janela.
 
 Para "Chromium" virar "Unveil" nos textos, o [`rebrand.mjs`](chromium/scripts/rebrand.mjs) precisa recalcular o ID de cada mensagem. As traduções (`.xtb`) são indexadas por uma impressão digital do texto em inglês, então o script calcula o ID novo do mesmo jeito que o GRIT do Chromium e move cada tradução para ele. Os testes conferem os IDs com valores calculados pelo próprio GRIT.
 
@@ -186,7 +192,9 @@ Para "Chromium" virar "Unveil" nos textos, o [`rebrand.mjs`](chromium/scripts/re
 
 ## Ainda não tem
 
-- Cookies separados por Space, como no Flecha. O split view é de duas abas, o máximo do Chromium.
+- O split view é de duas abas, o máximo do Chromium.
+- Nos Spaces com cookies separados, o Peek abre uma aba em vez da janela flutuante, porque não dá para pôr uma janela pop-up numa partição. Uma aba nova aberta pelo Chromium (Ctrl+T) nasce no armazenamento comum e reabre na partição do Space logo em seguida. Ao reiniciar, as abas restauradas reabrem na partição do Space em que a janela está.
+- Os patches 0011 e 0012 ainda não foram compilados. A parte da shell tem testes num Chromium comum, com um `chrome.unveilPrivate` de mentira; a separação de cookies em si só aparece no build do Unveil.
 - O Peek é uma janela pop-up do Chromium, e não uma camada desenhada dentro da janela, como no Flecha (o que exigiria uma moldura de janela própria, em C++). Quando um link de uma fixada abre o Peek, a aba nova que o Chromium cria aparece por um instante antes de virar o Peek.
 - A barra vive no painel lateral do Chromium (sem o cabeçalho, patch 0010), então o visual dela segue o do painel: largura pela borda, abrir e fechar como o Chromium faz. No Flecha, a janela inteira é desenhada pela shell, o que dá mais controle.
 - Atualização automática: por enquanto, baixe a release nova.
@@ -195,4 +203,4 @@ Para "Chromium" virar "Unveil" nos textos, o [`rebrand.mjs`](chromium/scripts/re
 
 ## Licença
 
-BSD 3-Clause, como o Chromium. A ideia vem do [Flecha](https://github.com/lucianodiisouza/flecha-browser) (MIT), mas o código do Unveil é próprio. As listas EasyList e EasyPrivacy são distribuídas sob GPLv3/CC BY-SA 3.0 pelos [autores da EasyList](https://easylist.to/).
+BSD 3-Clause, como o Chromium. A ideia vem do [Flecha](https://github.com/lucianodiisouza/flecha-browser) (MIT). Os patches 0011 e 0012 são adaptados dos do Flecha, e o aviso de licença deles está em [`chromium/patches/FLECHA_LICENSE`](chromium/patches/FLECHA_LICENSE); o resto do código do Unveil é próprio. As listas EasyList e EasyPrivacy são distribuídas sob GPLv3/CC BY-SA 3.0 pelos [autores da EasyList](https://easylist.to/).

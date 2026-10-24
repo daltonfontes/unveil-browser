@@ -15,7 +15,8 @@
     "alarms",
     "favicon",
     "contextMenus",
-    "scripting"
+    "scripting",
+    "unveilPrivate"
   ],
   "host_permissions": [
     "<all_urls>"

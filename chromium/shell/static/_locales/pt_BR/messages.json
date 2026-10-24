@@ -232,5 +232,28 @@
   },
   "peekFromPinnedHelp": {
     "message": "Links que abrem uma aba nova a partir de uma fixada ou de um favorito abrem numa janela flutuante. Esc ou um clique fora fecha."
+  },
+  "sidebarSeparateCookies": {
+    "message": "Cookies e logins separados"
+  },
+  "sidebarSeparateCookiesHint": {
+    "message": "Os sites deste Space têm cookies só dele: entre com uma conta diferente em cada Space."
+  },
+  "sidebarSeparateCookiesUnavailable": {
+    "message": "Só no navegador Unveil."
+  },
+  "sidebarSeparateCookiesBadge": {
+    "message": "cookies separados"
+  },
+  "sidebarClearSpaceCookies": {
+    "message": "Sair de todas as contas deste Space"
+  },
+  "sidebarClearSpaceCookiesConfirm": {
+    "message": "Apagar os cookies, logins e dados de sites de “$name$”?",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
   }
 }

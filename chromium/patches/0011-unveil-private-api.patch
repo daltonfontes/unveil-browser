@@ -1,0 +1,432 @@
+--- a/chrome/browser/extensions/api/BUILD.gn
++++ b/chrome/browser/extensions/api/BUILD.gn
+@@ -113,6 +113,7 @@ group("api_implementations") {
+     public_deps += [
+       "//chrome/browser/extensions/api/contextual_tasks_private",
+       "//chrome/browser/extensions/api/indigo_private",
++      "//chrome/browser/extensions/api/unveil_private",
+     ]
+   }
+ }
+--- /dev/null
++++ b/chrome/browser/extensions/api/unveil_private/BUILD.gn
+@@ -0,0 +1,22 @@
++# Copyright 2026 The Unveil Authors
++# Use of this source code is governed by a BSD-style license that can be
++# found in the LICENSE file.
++
++assert(!is_android)
++
++# chrome.unveilPrivate, for Unveil's shell (chromium/shell in the Unveil repo).
++# chrome/browser/unveil/unveil_spaces.h is header-only and belongs to no target.
++source_set("unveil_private") {
++  sources = [
++    "unveil_private_api.cc",
++    "unveil_private_api.h",
++  ]
++
++  deps = [
++    "//base",
++    "//chrome/common/extensions/api",
++    "//content/public/browser",
++    "//extensions/browser",
++    "//services/network/public/mojom",
++  ]
++}
+--- /dev/null
++++ b/chrome/browser/extensions/api/unveil_private/unveil_private_api.cc
+@@ -0,0 +1,126 @@
++// Copyright 2026 The Unveil Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "chrome/browser/extensions/api/unveil_private/unveil_private_api.h"
++
++#include <memory>
++#include <string>
++
++#include "base/functional/bind.h"
++#include "base/strings/string_number_conversions.h"
++#include "base/time/time.h"
++#include "chrome/browser/extensions/chrome_extension_function_details.h"
++#include "chrome/browser/extensions/extension_tab_util.h"
++#include "chrome/browser/extensions/window_controller.h"
++#include "chrome/browser/ui/browser_window/public/browser_window_interface.h"
++#include "chrome/browser/ui/tabs/tab_enums.h"
++#include "chrome/browser/ui/tabs/tab_strip_model.h"
++#include "chrome/browser/unveil/unveil_spaces.h"
++#include "chrome/common/extensions/api/unveil_private.h"
++#include "chrome/common/webui_url_constants.h"
++#include "content/public/browser/browser_context.h"
++#include "content/public/browser/navigation_controller.h"
++#include "content/public/browser/site_instance.h"
++#include "content/public/browser/storage_partition.h"
++#include "content/public/browser/web_contents.h"
++#include "services/network/public/mojom/cookie_manager.mojom.h"
++#include "services/network/public/mojom/network_context.mojom.h"
++#include "ui/base/page_transition_types.h"
++#include "url/gurl.h"
++
++namespace extensions {
++
++namespace unveil_private = api::unveil_private;
++
++// Ported from Flecha's flechaPrivate.createTab (MIT, github.com/
++// lucianodiisouza/flecha-browser): tabs.create(), with a storage partition.
++ExtensionFunction::ResponseAction UnveilPrivateCreateTabFunction::Run() {
++  auto params = unveil_private::CreateTab::Params::Create(args());
++  EXTENSION_FUNCTION_VALIDATE(params);
++  const unveil_private::CreateTabOptions& options = params->options;
++
++  std::string error;
++  WindowController* window = ExtensionTabUtil::GetControllerFromWindowID(
++      ChromeExtensionFunctionDetails(this), options.window_id, &error);
++  if (!window || !window->GetBrowserWindowInterface()) {
++    return RespondNow(Error(error.empty() ? "No window" : error));
++  }
++  GURL url(chrome::kChromeUINewTabURL);
++  if (options.url && !options.url->empty()) {
++    url = GURL(*options.url);
++    if (!url.is_valid()) {
++      return RespondNow(Error("Invalid url: " + *options.url));
++    }
++  }
++
++  // The SiteInstance decides the storage partition, for the tab's life.
++  content::BrowserContext* context = browser_context();
++  const std::string partition = options.partition.value_or(std::string());
++  scoped_refptr<content::SiteInstance> site_instance =
++      partition.empty()
++          ? content::SiteInstance::CreateForURL(context, url)
++          : content::SiteInstance::CreateForFixedStoragePartition(
++                context, url, UnveilSpacePartition(context, partition));
++  const bool active = options.active.value_or(true);
++  content::WebContents::CreateParams create_params(context,
++                                                    std::move(site_instance));
++  create_params.initially_hidden = !active;
++  std::unique_ptr<content::WebContents> contents =
++      content::WebContents::Create(create_params);
++  content::WebContents* raw = contents.get();
++  contents->GetController().LoadURL(url, content::Referrer(),
++                                    ui::PAGE_TRANSITION_AUTO_TOPLEVEL,
++                                    std::string());
++  window->GetBrowserWindowInterface()->GetTabStripModel()->AddWebContents(
++      std::move(contents), TabStripModel::kNoTab,
++      ui::PAGE_TRANSITION_AUTO_TOPLEVEL,
++      active ? AddTabTypes::ADD_ACTIVE : AddTabTypes::ADD_NONE);
++  return RespondNow(WithArguments(ExtensionTabUtil::GetTabId(raw)));
++}
++
++ExtensionFunction::ResponseAction UnveilPrivateGetTabPartitionFunction::Run() {
++  auto params = unveil_private::GetTabPartition::Params::Create(args());
++  EXTENSION_FUNCTION_VALIDATE(params);
++  content::WebContents* contents = nullptr;
++  if (!ExtensionTabUtil::GetTabById(params->tab_id, browser_context(),
++                                    /*include_incognito=*/false, &contents)) {
++    return RespondNow(
++        Error("No tab with id " + base::NumberToString(params->tab_id)));
++  }
++  return RespondNow(WithArguments(UnveilSpaceOf(contents)));
++}
++
++ExtensionFunction::ResponseAction UnveilPrivateClearPartitionFunction::Run() {
++  auto params = unveil_private::ClearPartition::Params::Create(args());
++  EXTENSION_FUNCTION_VALIDATE(params);
++  if (params->partition.empty()) {
++    return RespondNow(Error("Only a Space's own partition can be cleared."));
++  }
++  content::StoragePartition* partition = browser_context()->GetStoragePartition(
++      UnveilSpacePartition(browser_context(), params->partition));
++  // Cookies (session ones too), every kind of site storage, and the cache.
++  auto cookies = network::mojom::CookieDeletionFilter::New();
++  cookies->session_control =
++      network::mojom::CookieDeletionSessionControl::IGNORE_CONTROL;
++  pending_ = 2;
++  partition->ClearData(
++      content::StoragePartition::REMOVE_DATA_MASK_ALL,
++      /*filter_builder=*/nullptr,
++      content::StoragePartition::StorageKeyPolicyMatcherFunction(),
++      std::move(cookies), /*perform_storage_cleanup=*/true, base::Time(),
++      base::Time::Max(),
++      base::BindOnce(&UnveilPrivateClearPartitionFunction::OnCleared, this));
++  partition->GetNetworkContext()->ClearHttpCache(
++      base::Time(), base::Time::Max(), /*filter=*/nullptr,
++      base::BindOnce(&UnveilPrivateClearPartitionFunction::OnCleared, this));
++  return RespondLater();
++}
++
++void UnveilPrivateClearPartitionFunction::OnCleared() {
++  if (--pending_ == 0) {
++    Respond(NoArguments());
++  }
++}
++
++}  // namespace extensions
+--- /dev/null
++++ b/chrome/browser/extensions/api/unveil_private/unveil_private_api.h
+@@ -0,0 +1,50 @@
++// Copyright 2026 The Unveil Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#ifndef CHROME_BROWSER_EXTENSIONS_API_UNVEIL_PRIVATE_UNVEIL_PRIVATE_API_H_
++#define CHROME_BROWSER_EXTENSIONS_API_UNVEIL_PRIVATE_UNVEIL_PRIVATE_API_H_
++
++#include "extensions/browser/extension_function.h"
++
++namespace extensions {
++
++// chrome.unveilPrivate: what Unveil's browser gives its shell, and only the
++// shell (see the permission's allowlist in _permission_features.json). Its
++// functions use the UNKNOWN histogram value so that Unveil's patches stay off
++// Chromium's histogram enums.
++
++class UnveilPrivateCreateTabFunction : public ExtensionFunction {
++ public:
++  DECLARE_EXTENSION_FUNCTION("unveilPrivate.createTab", UNKNOWN)
++
++ protected:
++  ~UnveilPrivateCreateTabFunction() override = default;
++  ResponseAction Run() override;
++};
++
++class UnveilPrivateGetTabPartitionFunction : public ExtensionFunction {
++ public:
++  DECLARE_EXTENSION_FUNCTION("unveilPrivate.getTabPartition", UNKNOWN)
++
++ protected:
++  ~UnveilPrivateGetTabPartitionFunction() override = default;
++  ResponseAction Run() override;
++};
++
++class UnveilPrivateClearPartitionFunction : public ExtensionFunction {
++ public:
++  DECLARE_EXTENSION_FUNCTION("unveilPrivate.clearPartition", UNKNOWN)
++
++ protected:
++  ~UnveilPrivateClearPartitionFunction() override = default;
++  ResponseAction Run() override;
++
++ private:
++  void OnCleared();
++  int pending_ = 0;
++};
++
++}  // namespace extensions
++
++#endif  // CHROME_BROWSER_EXTENSIONS_API_UNVEIL_PRIVATE_UNVEIL_PRIVATE_API_H_
+--- /dev/null
++++ b/chrome/browser/unveil/unveil_spaces.h
+@@ -0,0 +1,100 @@
++// Copyright 2026 The Unveil Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#ifndef CHROME_BROWSER_UNVEIL_UNVEIL_SPACES_H_
++#define CHROME_BROWSER_UNVEIL_UNVEIL_SPACES_H_
++
++#include <string>
++
++#include "base/files/file_path.h"
++#include "base/memory/scoped_refptr.h"
++#include "content/public/browser/browser_context.h"
++#include "content/public/browser/security_principal.h"
++#include "content/public/browser/site_instance.h"
++#include "content/public/browser/storage_partition_config.h"
++#include "content/public/browser/web_contents.h"
++#include "url/gurl.h"
++
++// Spaces with separate cookies, as in Flecha (MIT, github.com/
++// lucianodiisouza/flecha-browser, patch 0034, which this follows). The tabs of
++// such a Space live in a storage partition of their own: cookies,
++// localStorage, IndexedDB, service workers, cache and the rest, on disk under
++// <profile>/Storage/ext/unveil-space/<hash of the name>, so a login stays
++// across restarts. The shell names the partition (the Space's id) and opens
++// the Space's tabs in it (chrome.unveilPrivate.createTab).
++//
++// A storage partition and not a profile per Space: a profile has its own
++// extensions and its own windows, so the shell and its sidebar would have to
++// be split across profiles, and a Space's tabs couldn't share the window with
++// the others. A partition keeps everything else (the window, the shell,
++// history, passwords, settings) and separates only what sites store.
++//
++// A tab's partition is fixed for its life: its SiteInstance is made with
++// SiteInstance::CreateForFixedStoragePartition(), which Chromium keeps across
++// navigations, cross-site ones and new BrowsingInstances included (as for
++// <webview>). Tabs a page opens stay in its partition: window.open() shares
++// the opener's BrowsingInstance, and links to a new tab (noopener, "Open Link
++// in New Tab") inherit it (UnveilSiteInstanceFor()). A tab moving to another
++// Space can't change partition, so the shell closes it and opens it again in
++// the other one.
++//
++// Header-only: every user already depends on //content/public/browser.
++
++inline constexpr char kUnveilSpacePartitionDomain[] = "unveil-space";
++
++// The storage partition of the Space named `name` (the shell's Space id). In
++// an off-the-record profile it is in memory, like the rest of that profile.
++inline content::StoragePartitionConfig UnveilSpacePartition(
++    content::BrowserContext* context,
++    const std::string& name) {
++  return content::StoragePartitionConfig::Create(
++      context, kUnveilSpacePartitionDomain, name, context->IsOffTheRecord());
++}
++
++inline bool IsUnveilSpacePartition(
++    const content::StoragePartitionConfig& config) {
++  return !config.is_default() &&
++         config.partition_domain() == kUnveilSpacePartitionDomain;
++}
++
++// The Space partition `contents` is in, or "" (the profile's own storage).
++inline std::string UnveilSpaceOf(content::WebContents* contents) {
++  if (!contents) {
++    return std::string();
++  }
++  const content::StoragePartitionConfig& config =
++      contents->GetSiteInstance()->GetSecurityPrincipal()
++          .GetStoragePartitionConfig();
++  return IsUnveilSpacePartition(config) ? config.partition_name()
++                                        : std::string();
++}
++
++// A SiteInstance in a new BrowsingInstance for `url`, in the Space partition
++// `source` is in; null when `source` is in the profile's own storage (then
++// the caller makes its SiteInstance as usual).
++inline scoped_refptr<content::SiteInstance> UnveilSiteInstanceFor(
++    content::WebContents* source,
++    const GURL& url) {
++  if (!source) {
++    return nullptr;
++  }
++  const content::StoragePartitionConfig& config =
++      source->GetSiteInstance()->GetSecurityPrincipal()
++          .GetStoragePartitionConfig();
++  if (!IsUnveilSpacePartition(config)) {
++    return nullptr;
++  }
++  return content::SiteInstance::CreateForFixedStoragePartition(
++      source->GetBrowserContext(), url, config);
++}
++
++// Where the Space partitions live, relative to the profile directory; kept
++// when Chromium garbage-collects storage partitions it doesn't know.
++inline base::FilePath UnveilSpacePartitionsPath() {
++  return base::FilePath(FILE_PATH_LITERAL("Storage"))
++      .Append(FILE_PATH_LITERAL("ext"))
++      .AppendASCII(kUnveilSpacePartitionDomain);
++}
++
++#endif  // CHROME_BROWSER_UNVEIL_UNVEIL_SPACES_H_
+--- a/chrome/common/extensions/api/_api_features.json
++++ b/chrome/common/extensions/api/_api_features.json
+@@ -553,6 +553,12 @@
+     "dependencies": ["permission:identity"],
+     "contexts": ["privileged_extension"]
+   },
++  // Unveil: what the browser gives Unveil's shell (chromium/shell), and only
++  // the shell (see the permission's allowlist).
++  "unveilPrivate": {
++    "dependencies": ["permission:unveilPrivate"],
++    "contexts": ["privileged_extension"]
++  },
+   "indigoPrivate": {
+     "dependencies": ["permission:indigoPrivate"],
+     "contexts": [
+--- a/chrome/common/extensions/api/_permission_features.json
++++ b/chrome/common/extensions/api/_permission_features.json
+@@ -482,6 +482,14 @@
+     "channel": "stable",
+     "extension_types": ["extension", "platform_app"]
+   },
++  // Unveil: only Unveil's shell, cdpknnidfjopheidjbploffefndegnlp
++  // (extension_misc::kUnveilShellExtensionId), a component extension.
++  "unveilPrivate": {
++    "channel": "stable",
++    "extension_types": ["extension"],
++    "allowlist": ["F2EF123988025414E146C45DBF12386F0827AA61"],
++    "location": "component"
++  },
+   "indigoPrivate": {
+     "channel": "stable",
+     "extension_types": ["extension"],
+--- a/chrome/common/extensions/api/api_sources.gni
++++ b/chrome/common/extensions/api/api_sources.gni
+@@ -94,6 +94,9 @@ if (enable_extensions) {
+     "settings_private.idl",
+     "system_private.json",
+ 
++    # Unveil: what the browser gives Unveil's shell (chromium/shell).
++    "unveil_private.idl",
++
+     # Despite the name, these APIs do not rely on any WebRTC-specific bits and
+     # as such do not belong in a conditional.
+     "webrtc_desktop_capture_private.idl",
+--- /dev/null
++++ b/chrome/common/extensions/api/unveil_private.idl
+@@ -0,0 +1,41 @@
++// Copyright 2026 The Unveil Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Use the <code>chrome.unveilPrivate</code> API for what Unveil's browser
++// gives its shell: tabs in a Space's own storage partition (Spaces with
++// separate cookies). Only Unveil's shell may use it; the contract is
++// chromium/shell/src/unveilPrivate.d.ts in the Unveil repo.
++namespace unveilPrivate {
++  // A new tab (createTab()).
++  dictionary CreateTabOptions {
++    // The window.
++    long windowId;
++    // The page (default: the new tab page).
++    DOMString? url;
++    // Whether it becomes the window's active tab (default: true).
++    boolean? active;
++    // The storage partition of a Space with separate cookies: the Space's id.
++    // Default: the profile's own storage.
++    DOMString? partition;
++  };
++
++  callback DoneCallback = void();
++  callback TabIdCallback = void(long tabId);
++  callback PartitionCallback = void(DOMString partition);
++
++  interface Functions {
++    // Opens a tab, like tabs.create(), optionally in a Space's own storage
++    // partition (cookies, logins, site data; kept on disk). The tab stays in
++    // that partition across navigations, and the tabs it opens inherit it.
++    static void createTab(CreateTabOptions options, TabIdCallback callback);
++    // The storage partition a tab is in: a Space's id, or "" (the profile's
++    // own storage).
++    static void getTabPartition(long tabId, PartitionCallback callback);
++    // Signs out of everything in a Space's partition: removes its cookies,
++    // storage and cache.
++    static void clearPartition(
++        DOMString partition,
++        optional DoneCallback callback);
++  };
++};
+--- a/chrome/common/extensions/permissions/chrome_api_permissions.cc
++++ b/chrome/common/extensions/permissions/chrome_api_permissions.cc
+@@ -172,6 +172,9 @@ constexpr APIPermissionInfo::InitInfo permissions_to_register[] = {
+      APIPermissionInfo::kFlagCannotBeOptional},
+     {APIPermissionID::kPdfViewerPrivate, "pdfViewerPrivate"},
+     {APIPermissionID::kIndigoPrivate, "indigoPrivate"},
++    // Unveil: chrome.unveilPrivate, for Unveil's shell.
++    {APIPermissionID::kUnveilPrivate, "unveilPrivate",
++     APIPermissionInfo::kFlagCannotBeOptional},
+     {APIPermissionID::kProxyOverrideRulesPrivate, "proxyOverrideRulesPrivate",
+      APIPermissionInfo::kFlagCannotBeOptional},
+     {APIPermissionID::kResourcesPrivate, "resourcesPrivate",
+--- a/extensions/common/mojom/api_permission_id.mojom
++++ b/extensions/common/mojom/api_permission_id.mojom
+@@ -300,6 +300,9 @@ enum APIPermissionID {
+   kPublicSuffix = 273,
+   kEnterpriseWebrtc = 274,
+   kMimeTypesHandlerPdf = 275,
++  // Unveil: chrome.unveilPrivate, for Unveil's shell. On a rebase, keep it
++  // last (after any new Chromium entry).
++  kUnveilPrivate = 276,
+ 
+   // Add new entries at the end of the enum and be sure to update the
+   // "ExtensionPermission3" enum in

@@ -4,7 +4,7 @@ Um navegador leve e sem rastreamento para Windows, feito sobre um fork do Chromi
 
 <p align="center"><img src="docs/screenshots/window-light.png" alt="A janela do Unveil: barra de endereço na linha dos botões da janela, barra lateral à esquerda com favoritos, fixadas, Hoje e Spaces" width="840"></p>
 
-<p align="center"><sub>Prévia: a barra lateral é a real; a linha de cima simula o que os patches 0007 e 0008 fazem na janela.</sub></p>
+<p align="center"><sub>Prévia: a barra lateral é a real; a linha de cima simula o que os patches 0007, 0008 e 0010 fazem na janela.</sub></p>
 
 ## Por quê
 
@@ -170,6 +170,7 @@ Os patches ficam pequenos e com um assunto cada, para que atualizar o Chromium c
 | 0007 | Janelas normais sem a faixa de abas: as abas ficam na barra lateral (`--unveil-show-tab-strip` traz a faixa de volta) |
 | 0008 | O painel lateral fica à esquerda por padrão |
 | 0009 | A shell abre a barra lateral em cada janela nova sem precisar de um clique |
+| 0010 | A barra ocupa o painel lateral inteiro, sem o cabeçalho do Chromium (título, fixar e fechar) |
 
 Para "Chromium" virar "Unveil" nos textos, o [`rebrand.mjs`](chromium/scripts/rebrand.mjs) precisa recalcular o ID de cada mensagem. As traduções (`.xtb`) são indexadas por uma impressão digital do texto em inglês, então o script calcula o ID novo do mesmo jeito que o GRIT do Chromium e move cada tradução para ele. Os testes conferem os IDs com valores calculados pelo próprio GRIT.
 
@@ -183,7 +184,7 @@ Para "Chromium" virar "Unveil" nos textos, o [`rebrand.mjs`](chromium/scripts/re
 ## Ainda não tem
 
 - Peek, split view e cookies separados por Space, como no Flecha.
-- A barra usa o painel lateral do Chromium, que tem um cabeçalho com título e um botão de fechar. Se você fechar a barra, ela volta pelo menu do painel lateral ou numa janela nova. No Flecha, a janela inteira é desenhada pela shell.
+- A barra vive no painel lateral do Chromium (sem o cabeçalho, patch 0010), então ainda dá para redimensioná-la, mas não para recolhê-la num atalho. No Flecha, a janela inteira é desenhada pela shell.
 - Atualização automática: por enquanto, baixe a release nova.
 - Ocultar elementos de anúncio na página (filtros cosméticos `##`). Hoje o bloqueio é só de rede, então às vezes sobra um espaço vazio.
 - Builds para ARM64.

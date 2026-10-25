@@ -45,6 +45,18 @@ runs:
     - name: Shell dependencies
       shell: pwsh
       run: npm ci
+    - name: Filter lists
+      shell: pwsh
+      # With curl, for the shell's build (UNVEIL_LISTS_DIR): Node's fetch
+      # crashes on them now and then on these runners (an undici assertion).
+      run: |
+        $lists = Join-Path $env:RUNNER_TEMP 'lists'
+        New-Item -ItemType Directory -Force $lists | Out-Null
+        foreach ($name in 'easylist', 'easyprivacy') {
+          curl.exe -fsSL --retry 5 -o (Join-Path $lists "$name.txt") "https://easylist.to/easylist/$name.txt"
+          if ($LASTEXITCODE -ne 0) { throw "$name failed" }
+        }
+        "UNVEIL_LISTS_DIR=$lists" >> $env:GITHUB_ENV
     - name: Get the build tree from the stage before
       if: inputs.first != 'true'
       uses: actions/download-artifact@v8

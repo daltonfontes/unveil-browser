@@ -9,10 +9,14 @@
 //   peekFromPinned), unless opened in the background (Ctrl+click, middle
 //   click);
 // - any link, from its right-click menu: "Open in Peek".
+//
+// In a Space with separate cookies, a link opens as a tab instead: a popup
+// window can't be put in the Space's storage partition (lib/partitions.ts).
 
 import { getSettings } from '../lib/settings.ts';
 import { peekBounds } from './bounds.ts';
-import { getSession, updateSession } from '../lib/sidebarState.ts';
+import { getData, getSession, updateSession } from '../lib/sidebarState.ts';
+import { createTabIn, partitionFor } from '../lib/partitions.ts';
 
 export type PeekCommand =
   | { type: 'open'; url: string; windowId: number; spaceId?: string }
@@ -50,6 +54,14 @@ const isWebUrl = (url: string | undefined) => !!url && /^https?:/.test(url);
 
 export async function openPeek(url: string, parentWindowId: number, spaceId?: string) {
   if (!isWebUrl(url)) return;
+  const partition = partitionFor((await getData()).spaces.find((s) => s.id === spaceId));
+  if (partition) {
+    const tabId = await createTabIn({ windowId: parentWindowId, url, active: true }, partition);
+    await updateSession((s) => {
+      s.tabSpace[tabId] = spaceId!;
+    });
+    return;
+  }
   // One peek at a time per window: a new one replaces the old.
   for (const [windowId, peek] of peeks) {
     if (peek.parentWindowId === parentWindowId) await closePeek(windowId);
@@ -116,10 +128,13 @@ export function startPeek() {
     if (tab.id === undefined || tab.openerTabId === undefined || !tab.active) return;
     const [settings, session] = await Promise.all([getSettings(), getSession()]);
     if (!settings.peekFromPinned || !session.tabEntry[tab.openerTabId]) return;
+    // The tab is in the Space's partition already: it stays a tab (see top).
+    const spaceId = session.tabSpace[tab.openerTabId];
+    if (partitionFor((await getData()).spaces.find((s) => s.id === spaceId))) return;
     const url = tab.pendingUrl || tab.url || (await urlOnceKnown(tab.id));
     if (!isWebUrl(url)) return;
     await chrome.tabs.remove(tab.id).catch(() => {});
-    await openPeek(url!, tab.windowId, session.tabSpace[tab.openerTabId]);
+    await openPeek(url!, tab.windowId, spaceId);
   });
 
   // Esc and the overlay's buttons (overlay.ts).

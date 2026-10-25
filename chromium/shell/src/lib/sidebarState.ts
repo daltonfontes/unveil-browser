@@ -12,6 +12,8 @@ export interface Space {
   emoji: string;
   /** A hue in degrees: the sidebar is tinted with it. */
   hue: number;
+  /** Its tabs have cookies and logins of their own (lib/partitions.ts). */
+  separateCookies?: boolean;
 }
 
 /** A favourite (every Space) or a pinned entry (one Space): a saved page. */

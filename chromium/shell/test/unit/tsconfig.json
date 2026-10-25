@@ -3,5 +3,5 @@
   "compilerOptions": {
     "types": ["chrome", "node"]
   },
-  "include": [".", "../../src/lib"]
+  "include": [".", "../../src/lib", "../../src/unveilPrivate.d.ts"]
 }

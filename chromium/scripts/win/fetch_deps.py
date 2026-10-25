@@ -192,6 +192,22 @@ def fetch_git(src, rel, url):
   stamp(path, revision)
 
 
+def drop_linux_binaries(path):
+  """Removes the Linux executables the tarball has where the Windows tools
+  go: gn would run third_party/cpython3/host/bin/python3 (Linux) before it
+  looked for python3.exe."""
+  for root, _, files in os.walk(path):
+    for name in files:
+      file = os.path.join(root, name)
+      try:
+        with open(file, 'rb') as f:
+          elf = f.read(4) == b'\x7fELF'
+      except OSError:
+        continue
+      if elf:
+        os.unlink(file)
+
+
 def fetch_cipd(src, rel, packages, cipd):
   lines = [f'$ParanoidMode CheckPresence']
   for p in packages:
@@ -202,6 +218,7 @@ def fetch_cipd(src, rel, packages, cipd):
     return
   print(f'cipd {rel}: ' + ', '.join(p['package'] for p in packages), flush=True)
   os.makedirs(path, exist_ok=True)
+  drop_linux_binaries(path)
   with tempfile.NamedTemporaryFile('w', suffix='.ensure', delete=False) as f:
     f.write(key + '\n')
   try:

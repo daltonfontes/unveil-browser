@@ -1,0 +1,7 @@
+#!/bin/sh
+# Starts Unveil from wherever it was unpacked. Its profile is in
+# ~/.config/unveil (patch 0013). CHROME_DESKTOP names the menu entry
+# (install.sh) so the window groups under Unveil's icon.
+here="$(dirname "$(readlink -f "$0")")"
+export CHROME_DESKTOP=unveil.desktop
+exec "$here/chrome" "$@"

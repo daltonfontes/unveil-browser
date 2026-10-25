@@ -26,10 +26,12 @@ if (-not (Test-Path (Join-Path $ChromiumSrc '.unveil-unpacked'))) {
   # With 7-Zip: Windows' own tar.exe can't read some file names in it (a
   # test file named with an emoji). The .xz is unpacked into the .tar on the
   # fly, through a pipe in cmd (PowerShell 5 would mangle the bytes), from a
-  # .cmd file so that cmd gets its quotes as written.
+  # .cmd file so that cmd gets its quotes as written. -snl -snld: keep the
+  # tarball's symlinks, relative ones (..\..) included, which 7-Zip skips
+  # as "dangerous" otherwise (7-Zip 23 or later).
   $sevenZip = Get-SevenZip
   $unpack = Join-Path $build 'unpack.cmd'
-  Set-Content -Path $unpack -Encoding ascii -Value "@`"$sevenZip`" x -so `"$tarball`" | `"$sevenZip`" x -si -ttar -snl -y -bd `"-o$build`" >nul"
+  Set-Content -Path $unpack -Encoding ascii -Value "@`"$sevenZip`" x -so `"$tarball`" | `"$sevenZip`" x -si -ttar -snl -snld -y -bd `"-o$build`" >nul"
   Invoke-Checked cmd.exe /d /c $unpack
   Remove-Item $unpack
   Move-Item $unpacked $ChromiumSrc

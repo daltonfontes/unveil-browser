@@ -22,8 +22,9 @@ runs:
     - name: Make room
       shell: bash
       run: |
-        # The source and the build need ~60 GB: /mnt is the runner's second
-        # disk, and the preinstalled SDKs this build doesn't use go.
+        # The source and the build need ~50 GB: they go on /mnt, the runner's
+        # second disk, and the archive passed between stages on the first,
+        # with the preinstalled SDKs this build doesn't use removed.
         sudo rm -rf /usr/local/lib/android /usr/local/.ghcup /usr/lib/jvm \
           /usr/lib/google-cloud-sdk /usr/share/dotnet /usr/share/swift /opt/ghc &
         sudo mkdir -p /mnt/unveil-build
@@ -44,14 +45,14 @@ runs:
       uses: actions/download-artifact@v8
       with:
         name: linux-tree
-        path: /mnt/artifact
+        path: ${{ runner.temp }}/artifact
     - name: Unpack the build tree
       if: inputs.first != 'true'
       shell: bash
       run: |
-        zstd -d -c /mnt/artifact/linux-tree.tar.zst | tar -xf - -C /mnt
-        rm -rf /mnt/artifact
-        df -h /mnt
+        zstd -d -c "$RUNNER_TEMP/artifact/linux-tree.tar.zst" | tar -xf - -C /mnt
+        rm -rf "$RUNNER_TEMP/artifact"
+        df -h / /mnt
     - name: Build
       id: build
       shell: bash
@@ -70,14 +71,14 @@ runs:
       shell: bash
       run: |
         rm -f /mnt/unveil-build/*.tar.xz
-        tar -C /mnt -cf - unveil-build | zstd -T0 -3 -o /mnt/linux-tree.tar.zst
-        ls -lh /mnt/linux-tree.tar.zst
+        tar -C /mnt -cf - unveil-build | zstd -T0 -3 -o "$RUNNER_TEMP/linux-tree.tar.zst"
+        ls -lh "$RUNNER_TEMP/linux-tree.tar.zst"
     - name: Hand the build tree on
       if: steps.build.outputs.status == 'running'
       uses: actions/upload-artifact@v7
       with:
         name: linux-tree
-        path: /mnt/linux-tree.tar.zst
+        path: ${{ runner.temp }}/linux-tree.tar.zst
         compression-level: 0
         retention-days: 2
         overwrite: true

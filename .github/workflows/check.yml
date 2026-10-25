@@ -1,7 +1,7 @@
 # Quick checks on every push and pull request, on Linux in a few minutes: the
 # patches still apply to the pinned Chromium, and the shell typechecks, passes
-# its tests and works in a real Chromium. The browser itself is built on
-# Windows with chromium/scripts/build-release.ps1.
+# its tests and works in a real Chromium. The browser itself is built by
+# build.yml (hours, in stages), or locally with chromium/scripts.
 name: check
 on:
   push:

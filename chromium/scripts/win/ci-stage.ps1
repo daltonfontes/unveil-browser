@@ -6,6 +6,7 @@
 . (Join-Path $PSScriptRoot '../env.ps1')
 
 & (Join-Path $PSScriptRoot 'fetch-tarball.ps1')
+& (Join-Path $PSScriptRoot 'ensure-sdk.ps1')
 
 $status = 'done'
 try {

@@ -6,7 +6,7 @@
 #
 #   chromium/scripts/linux/fetch.sh
 #
-# Needs: python3, node, curl, xz, ninja, gperf, go, clang-format, esbuild and
+# Needs: python3, node (any recent one; the build gets its own), curl, xz, ninja, gperf, go, clang-format, esbuild and
 # tsc (npm -g install esbuild typescript). install-deps.sh installs them on
 # Debian and Ubuntu.
 . "$(dirname "$0")/env.sh"
@@ -47,7 +47,15 @@ link() {
   mkdir -p "$(dirname "$2")"
   ln -sfn "$1" "$2"
 }
-link "$(command -v node)" third_party/node/linux/node-linux-x64/bin/node
+# The build checks for the exact Node version Chromium pins.
+node_version="$(sed -n 's/^NODE_VERSION="\(.*\)"/\1/p' third_party/node/update_node_binaries)"
+node_dir=third_party/node/linux/node-linux-x64
+if [ "$("$node_dir/bin/node" --version 2>/dev/null)" != "$node_version" ]; then
+  rm -rf "$node_dir"
+  mkdir -p "$node_dir"
+  curl -fL --retry 5 "https://nodejs.org/dist/$node_version/node-$node_version-linux-x64.tar.xz" |
+    tar -xJ --strip-components=1 -C "$node_dir"
+fi
 link "$(command -v gperf)" third_party/gperf/cipd/bin/gperf
 link "$(command -v go)" third_party/dawn/tools/golang/linux-amd64/bin/go
 link "$(command -v clang-format)" buildtools/linux64-format/clang-format

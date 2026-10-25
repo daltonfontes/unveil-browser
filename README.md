@@ -65,6 +65,17 @@ O [Flecha](https://flecha.dev/pt-br/) mostrou que dá para fazer um navegador pr
    - `Unveil-<versão>-x64.zip` traz os mesmos arquivos: é só descompactar e abrir o `chrome.exe`.
 2. Os binários não são assinados, então na primeira execução o Windows SmartScreen pode mostrar um aviso. Clique em **Mais informações → Executar assim mesmo**.
 
+No Linux (x64, qualquer distro recente):
+
+```sh
+tar -xJf unveil-<versão>-linux-x64.tar.xz
+cd unveil-<versão>-linux-x64
+./install.sh    # opcional: põe o Unveil no menu de aplicativos e em ~/.local/bin
+./unveil
+```
+
+O perfil fica em `~/.config/unveil`. Se a distro não deixar o Chromium usar user namespaces (é raro), o sandbox precisa do `chrome-sandbox` como root: `sudo chown root:root chrome-sandbox && sudo chmod 4755 chrome-sandbox`.
+
 ## Compilar
 
 Você precisa de:
@@ -114,6 +125,21 @@ O `build-release.ps1` faz, nesta ordem:
 5. chama o `package-release.ps1`, que deixa em `dist\` o instalador, o zip e o `SHA256SUMS.txt`.
 
 Com `UNVEIL_OFFICIAL=1`, ele adiciona `is_official_build`: o navegador sai menor e mais rápido, mas a etapa de link pede uns 64 GB de RAM. Os codecs H.264 e AAC vêm ligados para os vídeos tocarem em todo lugar; veja a observação sobre patentes no `release.gn`.
+
+### Linux
+
+O build de Linux parte do tarball oficial do código do Chromium, como fazem as distros (2 GB para baixar em vez de 40 GB de checkout), com o clang e o Rust do próprio Chromium e o sysroot Debian dele, então o binário roda em qualquer distro recente. Precisa de uns 60 GB livres e 16 GB de RAM.
+
+```sh
+chromium/scripts/linux/install-deps.sh   # Debian/Ubuntu: ninja, gperf, go, esbuild...
+chromium/scripts/linux/fetch.sh          # o código (../unveil-build/src), o clang, o Rust e o gn
+chromium/scripts/linux/build.sh          # apply.sh (marca, patches, textos) e ninja -C out/Release chrome
+chromium/scripts/linux/package.sh        # dist/unveil-<versão>-linux-x64.tar.xz
+```
+
+### Builds na nuvem
+
+O workflow [`build`](.github/workflows/build.yml) compila o Unveil nos runners gratuitos do GitHub Actions: rode à mão em Actions → build → Run workflow, ou envie uma tag `v*` para ele criar a release com os pacotes. O Chromium demora mais que as 6 horas que um job pode durar, então o build é dividido em etapas de umas 5 horas, e cada etapa entrega a árvore do build para a próxima, que continua de onde parou. Um build completo leva de 15 a 25 horas.
 
 ## Organização do repositório
 

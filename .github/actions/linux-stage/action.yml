@@ -1,0 +1,94 @@
+# One stage of the Linux build (see .github/workflows/build.yml): get the
+# build tree from the stage before (or the Chromium source, in the first),
+# build for a few hours, then hand the tree on, or the package when done.
+name: Linux build stage
+inputs:
+  first:
+    description: Whether this is the first stage, which fetches the source.
+    default: "false"
+  last:
+    description: Whether this is the last stage, which fails if the build isn't done.
+    default: "false"
+  timeout:
+    description: How long ninja may run, in seconds.
+    required: true
+outputs:
+  status:
+    description: "running: the next stage carries on; done: dist/ has the package."
+    value: ${{ steps.build.outputs.status }}
+runs:
+  using: composite
+  steps:
+    - name: Make room
+      shell: bash
+      run: |
+        # The source and the build need ~50 GB: they go on /mnt, the runner's
+        # second disk, and the archive passed between stages on the first,
+        # with the preinstalled SDKs this build doesn't use removed.
+        sudo rm -rf /usr/local/lib/android /usr/local/.ghcup /usr/lib/jvm \
+          /usr/lib/google-cloud-sdk /usr/share/dotnet /usr/share/swift /opt/ghc &
+        sudo mkdir -p /mnt/unveil-build
+        sudo chown "$(id -u):$(id -g)" /mnt/unveil-build
+        wait
+        df -h / /mnt
+    - uses: actions/setup-node@v7
+      with:
+        node-version: 22
+        cache: npm
+    - name: Build tools
+      shell: bash
+      run: |
+        chromium/scripts/linux/install-deps.sh
+        npm ci
+    - name: Get the build tree from the stage before
+      if: inputs.first != 'true'
+      uses: actions/download-artifact@v8
+      with:
+        name: linux-tree
+        path: ${{ runner.temp }}/artifact
+    - name: Unpack the build tree
+      if: inputs.first != 'true'
+      shell: bash
+      run: |
+        zstd -d -c "$RUNNER_TEMP/artifact/linux-tree.tar.zst" | tar -xf - -C /mnt
+        rm -rf "$RUNNER_TEMP/artifact"
+        df -h / /mnt
+    - name: Build
+      id: build
+      shell: bash
+      env:
+        UNVEIL_BUILD: /mnt/unveil-build
+        UNVEIL_BUILD_TIMEOUT: ${{ inputs.timeout }}
+      run: chromium/scripts/linux/ci-stage.sh
+    - name: Not done in the last stage
+      if: inputs.last == 'true' && steps.build.outputs.status != 'done'
+      shell: bash
+      run: |
+        echo "::error::The build didn't finish in the stages there are: add stages to .github/workflows/build.yml."
+        exit 1
+    - name: Pack the build tree
+      if: steps.build.outputs.status == 'running'
+      shell: bash
+      run: |
+        rm -f /mnt/unveil-build/*.tar.xz
+        tar -C /mnt -cf - unveil-build | zstd -T0 -3 -o "$RUNNER_TEMP/linux-tree.tar.zst"
+        ls -lh "$RUNNER_TEMP/linux-tree.tar.zst"
+    - name: Hand the build tree on
+      if: steps.build.outputs.status == 'running'
+      uses: actions/upload-artifact@v7
+      with:
+        name: linux-tree
+        path: ${{ runner.temp }}/linux-tree.tar.zst
+        compression-level: 0
+        retention-days: 2
+        overwrite: true
+    - name: Upload the package
+      if: steps.build.outputs.status == 'done'
+      uses: actions/upload-artifact@v7
+      with:
+        name: unveil-linux-x64
+        path: |
+          dist/*.tar.xz
+          dist/SHA256SUMS-linux.txt
+        compression-level: 0
+        if-no-files-found: error

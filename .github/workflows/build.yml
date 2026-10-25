@@ -1,0 +1,188 @@
+# Builds Unveil for people to download: by hand (Actions > build > Run
+# workflow), or for a release when a v* tag is pushed (the release then gets
+# the packages). Chromium takes longer to build than a GitHub runner may run
+# a job (6 hours), so the build is split in stages: each builds for about 5
+# hours and hands the build tree to the next, which carries on where it
+# stopped. Stages after the build is done are skipped.
+name: build
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux-1:
+    name: Linux, stage 1
+    runs-on: ubuntu-24.04
+    timeout-minutes: 355
+    outputs:
+      status: ${{ steps.stage.outputs.status }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/linux-stage
+        id: stage
+        with:
+          first: "true"
+          timeout: 14400
+
+  linux-2:
+    name: Linux, stage 2
+    runs-on: ubuntu-24.04
+    timeout-minutes: 355
+    needs: linux-1
+    if: needs.linux-1.outputs.status == 'running'
+    outputs:
+      status: ${{ steps.stage.outputs.status }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/linux-stage
+        id: stage
+        with:
+          timeout: 16800
+
+  linux-3:
+    name: Linux, stage 3
+    runs-on: ubuntu-24.04
+    timeout-minutes: 355
+    needs: linux-2
+    if: needs.linux-2.outputs.status == 'running'
+    outputs:
+      status: ${{ steps.stage.outputs.status }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/linux-stage
+        id: stage
+        with:
+          timeout: 16800
+
+  linux-4:
+    name: Linux, stage 4
+    runs-on: ubuntu-24.04
+    timeout-minutes: 355
+    needs: linux-3
+    if: needs.linux-3.outputs.status == 'running'
+    outputs:
+      status: ${{ steps.stage.outputs.status }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/linux-stage
+        id: stage
+        with:
+          timeout: 16800
+
+  linux-5:
+    name: Linux, stage 5
+    runs-on: ubuntu-24.04
+    timeout-minutes: 355
+    needs: linux-4
+    if: needs.linux-4.outputs.status == 'running'
+    outputs:
+      status: ${{ steps.stage.outputs.status }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/linux-stage
+        id: stage
+        with:
+          timeout: 16800
+
+  linux-6:
+    name: Linux, stage 6
+    runs-on: ubuntu-24.04
+    timeout-minutes: 355
+    needs: linux-5
+    if: needs.linux-5.outputs.status == 'running'
+    outputs:
+      status: ${{ steps.stage.outputs.status }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/linux-stage
+        id: stage
+        with:
+          timeout: 16800
+
+  linux-7:
+    name: Linux, stage 7
+    runs-on: ubuntu-24.04
+    timeout-minutes: 355
+    needs: linux-6
+    if: needs.linux-6.outputs.status == 'running'
+    outputs:
+      status: ${{ steps.stage.outputs.status }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/linux-stage
+        id: stage
+        with:
+          timeout: 16800
+
+  linux-8:
+    name: Linux, stage 8
+    runs-on: ubuntu-24.04
+    timeout-minutes: 355
+    needs: linux-7
+    if: needs.linux-7.outputs.status == 'running'
+    outputs:
+      status: ${{ steps.stage.outputs.status }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/linux-stage
+        id: stage
+        with:
+          timeout: 16800
+
+  linux-9:
+    name: Linux, stage 9
+    runs-on: ubuntu-24.04
+    timeout-minutes: 355
+    needs: linux-8
+    if: needs.linux-8.outputs.status == 'running'
+    outputs:
+      status: ${{ steps.stage.outputs.status }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/linux-stage
+        id: stage
+        with:
+          timeout: 16800
+
+  linux-10:
+    name: Linux, stage 10
+    runs-on: ubuntu-24.04
+    timeout-minutes: 355
+    needs: linux-9
+    if: needs.linux-9.outputs.status == 'running'
+    outputs:
+      status: ${{ steps.stage.outputs.status }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/linux-stage
+        id: stage
+        with:
+          last: "true"
+          timeout: 16800
+
+  release:
+    name: Release
+    if: ${{ !cancelled() && startsWith(github.ref, 'refs/tags/v') && contains(join(needs.*.outputs.status, ','), 'done') }}
+    needs: [linux-1, linux-2, linux-3, linux-4, linux-5, linux-6, linux-7, linux-8, linux-9, linux-10]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: unveil-linux-x64
+          path: dist
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$TAG" dist/* --repo "$GITHUB_REPOSITORY" --title "Unveil ${TAG#v}" --generate-notes

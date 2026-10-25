@@ -1,0 +1,10 @@
+
+# Linux: chromium/scripts/linux/build.sh adds this to release.gn. Chromium's own
+# clang and Rust (fetch.sh), against its Debian sysroot, so the binary runs on
+# any recent distro.
+use_sysroot = true
+is_clang = true
+# VA-API video decoding, and screen sharing on Wayland through PipeWire.
+use_vaapi = true
+rtc_use_pipewire = true
+use_kerberos = false

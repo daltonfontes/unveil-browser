@@ -1,58 +1,61 @@
 --- a/chrome/BUILD.gn
 +++ b/chrome/BUILD.gn
-@@ -72,6 +72,17 @@
+@@ -72,6 +72,17 @@ declare_args() {
    # signing identity. If `include_branded_entitlements` is set to false, these
    # entitlements will be skipped.
    include_branded_entitlements = true
 +
 +  # Unveil: a source-absolute path ("//...") to the built shell extension
-+  # (chromium/shell/dist in the Unveil repo), copied beside chrome.dll as
++  # (chromium/shell/dist in the Unveil repo), copied beside the browser as
 +  # unveil_shell, where ComponentLoader looks without --unveil-shell-dir.
 +  # build-release.ps1 stages the shell at //unveil/shell and sets this. Empty
 +  # (dev builds, which pass --unveil-shell-dir) copies none.
 +  unveil_shell_dir = ""
 +
 +  # Unveil: a source-absolute path to Unveil's initial_preferences (its
-+  # privacy defaults for new profiles), copied beside chrome.exe.
++  # privacy defaults for new profiles), copied beside the browser.
 +  unveil_initial_preferences = ""
  }
  
  assert(!is_ios, "Chromium/iOS shouldn't use anything in //chrome")
-@@ -192,6 +203,13 @@
+@@ -182,6 +193,15 @@ if (!is_android && !is_mac) {
+       deps += [ "//components/webapps/isolated_web_apps:scheme" ]
      }
  
-     if (is_win) {
-+      if (unveil_shell_dir != "") {
-+        data_deps += [ ":unveil_shell" ]
-+      }
-+      if (unveil_initial_preferences != "") {
-+        data_deps += [ ":unveil_initial_preferences" ]
-+      }
++    # Unveil: the shell and initial_preferences beside the browser, on
++    # every platform (Windows, Linux).
++    if (unveil_shell_dir != "") {
++      data_deps += [ ":unveil_shell" ]
++    }
++    if (unveil_initial_preferences != "") {
++      data_deps += [ ":unveil_initial_preferences" ]
++    }
 +
-       sources += [
-         "app/chrome_exe.rc",
-         "app/chrome_exe_main_win.cc",
-@@ -485,6 +503,20 @@
-     outputs = [ "$root_out_dir/First Run" ]
+     if (is_chromeos) {
+       data_deps += [ "//sandbox/linux:chrome_sandbox" ]
+       if (build_mojo_proxy) {
+@@ -419,6 +439,21 @@ if (!is_android && !is_mac) {
    }
+ }  # !is_android && !is_mac
  
-+  if (unveil_shell_dir != "") {
-+    copy("unveil_shell") {
-+      sources = [ unveil_shell_dir ]
-+      outputs = [ "$root_out_dir/unveil_shell" ]
-+    }
++# Unveil: copied beside the browser (see unveil_shell_dir above).
++if (unveil_shell_dir != "") {
++  copy("unveil_shell") {
++    sources = [ unveil_shell_dir ]
++    outputs = [ "$root_out_dir/unveil_shell" ]
 +  }
++}
 +
-+  if (unveil_initial_preferences != "") {
-+    copy("unveil_initial_preferences") {
-+      sources = [ unveil_initial_preferences ]
-+      outputs = [ "$root_out_dir/initial_preferences" ]
-+    }
++if (unveil_initial_preferences != "") {
++  copy("unveil_initial_preferences") {
++    sources = [ unveil_initial_preferences ]
++    outputs = [ "$root_out_dir/initial_preferences" ]
 +  }
++}
 +
-   copy("copy_minibranch") {
-     sources = [ "//build/util/MINIBRANCH" ]
-     outputs = [ "$root_out_dir/MINIBRANCH" ]
+ if (is_win) {
+   shared_library("chrome_dll") {
+     configs -= [ "//build/config/compiler:thinlto_optimize_default" ]
 --- a/chrome/installer/mini_installer/chrome.release
 +++ b/chrome/installer/mini_installer/chrome.release
 @@ -8,6 +8,8 @@
@@ -64,7 +67,7 @@
  #
  # Chrome version dir assembly manifest.
  # The name of this file must match the name of the version dir, so we cannot
-@@ -43,6 +45,16 @@
+@@ -43,6 +45,16 @@ v8_context_snapshot.bin: %(VersionDir)s\
  #
  Extensions\*.*: %(VersionDir)s\Extensions\
  locales\*.pak: %(VersionDir)s\Locales

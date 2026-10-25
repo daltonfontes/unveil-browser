@@ -1,0 +1,25 @@
+[Desktop Entry]
+Version=1.0
+Name=Unveil
+GenericName=Web Browser
+GenericName[pt_BR]=Navegador
+Comment=A light browser, no tracking
+Comment[pt_BR]=Um navegador leve, sem rastreamento
+Exec=unveil %U
+Icon=unveil
+Terminal=false
+Type=Application
+Categories=Network;WebBrowser;
+MimeType=text/html;text/xml;application/xhtml+xml;x-scheme-handler/http;x-scheme-handler/https;
+StartupWMClass=unveil
+Actions=new-window;new-private-window;
+
+[Desktop Action new-window]
+Name=New Window
+Name[pt_BR]=Nova janela
+Exec=unveil
+
+[Desktop Action new-private-window]
+Name=New Private Window
+Name[pt_BR]=Nova janela anônima
+Exec=unveil --incognito

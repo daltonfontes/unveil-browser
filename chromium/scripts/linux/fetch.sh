@@ -6,9 +6,9 @@
 #
 #   chromium/scripts/linux/fetch.sh
 #
-# Needs: python3, node (any recent one; the build gets its own), curl, xz, ninja, gperf, go, clang-format, esbuild and
-# tsc (npm -g install esbuild typescript). install-deps.sh installs them on
-# Debian and Ubuntu.
+# Needs: python3, node (any recent one; the build gets its own), curl, xz,
+# ninja, gperf, go, clang-format and esbuild (npm -g install esbuild).
+# install-deps.sh installs them on Debian and Ubuntu.
 . "$(dirname "$0")/env.sh"
 
 tarball="$UNVEIL_BUILD/chromium-$CHROMIUM_VERSION-lite.tar.xz"
@@ -59,7 +59,17 @@ fi
 link "$(command -v gperf)" third_party/gperf/cipd/bin/gperf
 link "$(command -v go)" third_party/dawn/tools/golang/linux-amd64/bin/go
 link "$(command -v clang-format)" buildtools/linux64-format/clang-format
-link "$(command -v tsc)" third_party/typescript/linux-amd64/src/lib/tsc
+# TypeScript's native compiler, at the version DEPS pins: the tarball has its
+# lib files but not the binary, which must sit beside them.
+ts_version="$(grep -A6 "'src/third_party/typescript/linux-amd64/src'" DEPS | sed -n "s/.*'version:[0-9]*@\([0-9.]*\)'.*/\1/p")"
+ts_bin=third_party/typescript/linux-amd64/src/lib/tsc
+if [ ! -f "$ts_bin" ] || [ -L "$ts_bin" ] || [ "$(cat "$ts_bin.unveil-version" 2>/dev/null)" != "$ts_version" ]; then
+  rm -f "$ts_bin"
+  curl -fL --retry 5 "https://registry.npmjs.org/@typescript/typescript-linux-x64/-/typescript-linux-x64-$ts_version.tgz" |
+    tar -xzO package/lib/tsc > "$ts_bin"
+  chmod +x "$ts_bin"
+  echo "$ts_version" > "$ts_bin.unveil-version"
+fi
 esbuild_pkg="$(npm root -g)/esbuild"
 if [ -d "$esbuild_pkg" ]; then
   rm -rf third_party/devtools-frontend/src/node_modules/esbuild

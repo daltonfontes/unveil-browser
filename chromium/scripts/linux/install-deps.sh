@@ -14,4 +14,4 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
 
 command -v node >/dev/null || { echo "Install Node.js 22 or later first (https://nodejs.org)."; exit 1; }
 # A Node from nodejs.org or setup-node installs global packages without sudo.
-if [ -w "$(npm prefix -g)" ]; then npm install -g esbuild typescript; else sudo -E npm install -g esbuild typescript; fi
+if [ -w "$(npm prefix -g)" ]; then npm install -g esbuild; else sudo -E npm install -g esbuild; fi

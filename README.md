@@ -86,6 +86,8 @@ Você precisa de:
 - [depot_tools](https://commondatastorage.googleapis.com/chrome-infra-docs/flat/depot_tools/docs/html/depot_tools_tutorial.html) (o `fetch.ps1` instala se não tiver)
 - um checkout do Chromium na versão de [`chromium/build/CHROMIUM_VERSION`](chromium/build/CHROMIUM_VERSION), que hoje é a 157. O `fetch.ps1` baixa: uns 40 GB, e uma hora ou mais.
 
+Em vez do checkout, dá para usar o tarball oficial do código, como faz o build na nuvem: `chromium\scripts\win\fetch-tarball.ps1` baixa 2 GB em vez de 40 GB e não precisa de depot_tools. O [`win/fetch_deps.py`](chromium/scripts/win/fetch_deps.py) lê o DEPS do Chromium e acrescenta o que só um checkout de Windows teria (cabeçalhos do DirectX e do WebAuthn, o gn, o ninja, o clang e o Rust de Windows, o 7-Zip do instalador...). O resto do ciclo é o mesmo.
+
 O [`chromium/scripts/env.ps1`](chromium/scripts/env.ps1) define onde fica cada coisa, e todos os scripts leem dele. Por padrão o checkout fica em `C:\src\chromium\src` e o depot_tools em `C:\src\depot_tools`. Para mudar, use as variáveis `CHROMIUM_SRC`, `DEPOT_TOOLS` e `UNVEIL_PROFILE` (o perfil de desenvolvimento).
 
 Rode no PowerShell (se o Windows bloquear scripts: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`):
@@ -139,7 +141,7 @@ chromium/scripts/linux/package.sh        # dist/unveil-<versão>-linux-x64.tar.x
 
 ### Builds na nuvem
 
-O workflow [`build`](.github/workflows/build.yml) compila o Unveil nos runners gratuitos do GitHub Actions: rode à mão em Actions → build → Run workflow, ou envie uma tag `v*` para ele criar a release com os pacotes. O Chromium demora mais que as 6 horas que um job pode durar, então o build é dividido em etapas de umas 5 horas, e cada etapa entrega a árvore do build para a próxima, que continua de onde parou. Um build completo leva de 15 a 25 horas.
+O workflow [`build`](.github/workflows/build.yml) compila o Unveil para Linux e Windows nos runners gratuitos do GitHub Actions: rode à mão em Actions → build → Run workflow (Linux, Windows ou os dois), ou envie uma tag `v*` para ele criar a release com os pacotes dos dois. O Chromium demora mais que as 6 horas que um job pode durar, então o build é dividido em etapas de umas 5 horas, e cada etapa entrega a árvore do build para a próxima, que continua de onde parou. Um build completo leva de 15 a 25 horas.
 
 ## Organização do repositório
 

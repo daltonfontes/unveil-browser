@@ -1,0 +1,5 @@
+# Patches apply to Chromium's LF sources byte for byte, and the shell scripts
+# run in bash: keep both LF on Windows checkouts too (core.autocrlf).
+*.patch -text
+*.sh text eol=lf
+chromium/scripts/linux/unveil text eol=lf

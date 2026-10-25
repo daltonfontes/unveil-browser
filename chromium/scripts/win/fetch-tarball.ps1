@@ -33,10 +33,15 @@ if (-not (Test-Path (Join-Path $ChromiumSrc '.unveil-unpacked'))) {
   Invoke-Checked cmd.exe /d /c $unpack
   Remove-Item $unpack
   Move-Item $unpacked $ChromiumSrc
-  # That test file isn't built; without it, tar.exe can pack and unpack the
-  # tree between CI stages (.github/actions/win-stage).
-  Get-ChildItem -LiteralPath (Join-Path $ChromiumSrc 'third_party/vulkan-loader/src/tests/framework/icd/export_definitions') -ErrorAction SilentlyContinue |
-    Where-Object { $_.Name -match '[^\x00-\x7f]' } | Remove-Item
+  # Files named with emoji or other non-ASCII characters (test data, such as
+  # a volcano emoji in vulkan-loader's tests): none is built, and tar.exe can't pack or unpack
+  # them between CI stages (.github/actions/win-stage), so they go.
+  $odd = [System.IO.Directory]::EnumerateFiles($ChromiumSrc, '*', 'AllDirectories') |
+    Where-Object { [System.IO.Path]::GetFileName($_) -match '[^\x00-\x7f]' }
+  foreach ($file in $odd) {
+    Write-Host "removing $file"
+    Remove-Item -LiteralPath $file
+  }
   New-Item -ItemType File (Join-Path $ChromiumSrc '.unveil-unpacked') | Out-Null
   # Not needed any more, and CI runners are short on disk.
   if (-not $env:UNVEIL_KEEP_TARBALL) { Remove-Item $tarball }

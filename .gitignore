@@ -4,3 +4,4 @@ chromium/shell/dist/
 chromium/shell/.cache/
 # Release packages (chromium/scripts/package-release.ps1)
 /dist/
+__pycache__/

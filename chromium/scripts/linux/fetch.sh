@@ -7,7 +7,7 @@
 #   chromium/scripts/linux/fetch.sh
 #
 # Needs: python3, node (any recent one; the build gets its own), curl, xz,
-# ninja, gperf, go, clang-format and esbuild (npm -g install esbuild).
+# ninja, gperf, clang-format and esbuild (npm -g install esbuild).
 # install-deps.sh installs them on Debian and Ubuntu.
 . "$(dirname "$0")/env.sh"
 
@@ -57,7 +57,15 @@ if [ "$("$node_dir/bin/node" --version 2>/dev/null)" != "$node_version" ]; then
     tar -xJ --strip-components=1 -C "$node_dir"
 fi
 link "$(command -v gperf)" third_party/gperf/cipd/bin/gperf
-link "$(command -v go)" third_party/dawn/tools/golang/linux-amd64/bin/go
+# Dawn generates sources with Go, at the version its DEPS pins (a system Go
+# is often older, and can't fetch a newer toolchain here).
+go_version="$(sed -n "s/.*'dawn_go_version': 'version:[0-9]*@\([0-9.]*\)'.*/\1/p" third_party/dawn/DEPS)"
+go_dir=third_party/dawn/tools/golang/linux-amd64
+if [ "$("$go_dir/bin/go" env GOVERSION 2>/dev/null)" != "go$go_version" ]; then
+  rm -rf "$go_dir"
+  mkdir -p "$go_dir"
+  curl -fL --retry 5 "https://go.dev/dl/go$go_version.linux-amd64.tar.gz" | tar -xz --strip-components=1 -C "$go_dir"
+fi
 link "$(command -v clang-format)" buildtools/linux64-format/clang-format
 # TypeScript's native compiler, at the version DEPS pins: the tarball has its
 # lib files but not the binary, which must sit beside them.

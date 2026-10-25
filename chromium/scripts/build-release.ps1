@@ -6,7 +6,10 @@
 #   chromium\scripts\build-release.ps1 [-NoPackage] [autoninja arguments...]
 #
 # UNVEIL_OFFICIAL=1 adds is_official_build = true (ThinLTO: smaller and
-# faster, but the link needs ~64 GB of RAM).
+# faster, but the link needs ~64 GB of RAM). UNVEIL_BUILD_TIMEOUT=<seconds>
+# stops the build after that long (for CI runners with a time limit; the next
+# run carries on). Works on a git checkout (fetch.ps1, with depot_tools) and
+# on the source tarball (win\fetch-tarball.ps1, with its own gn and ninja).
 param([switch]$NoPackage)
 . (Join-Path $PSScriptRoot 'env.ps1')
 
@@ -33,12 +36,32 @@ $argsGn = Get-Content (Join-Path $UnveilChromium 'build/release.gn') -Raw
 if ($env:UNVEIL_OFFICIAL -eq '1') { $argsGn += "`nis_official_build = true`n" }
 Set-Content -Path (Join-Path $out 'args.gn') -Value $argsGn -NoNewline
 
+# The tarball brings its own gn and ninja (win\fetch_deps.py); a git checkout
+# uses depot_tools' wrappers.
+$gn = Join-Path $ChromiumSrc 'buildtools/win/gn.exe'
+$ninja = Join-Path $ChromiumSrc 'third_party/ninja/ninja.exe'
+$fromTarball = (Test-Path (Join-Path $ChromiumSrc '.unveil-unpacked')) -and (Test-Path $gn) -and (Test-Path $ninja)
+$targets = @('chrome', 'mini_installer')
+
 Push-Location $ChromiumSrc
 try {
   Step 'gn gen out\Release'
-  Invoke-Checked gn.bat gen out\Release
-  Step 'autoninja -C out\Release chrome mini_installer'
-  Invoke-Checked autoninja.bat -C out\Release chrome mini_installer @args
+  if ($fromTarball) { Invoke-Checked $gn gen out\Release } else { Invoke-Checked gn.bat gen out\Release }
+  Step "ninja -C out\Release $targets"
+  if ($env:UNVEIL_BUILD_TIMEOUT) {
+    $ninjaArgs = @('-C', 'out\Release') + $targets + $args
+    $proc = Start-Process -FilePath ($(if ($fromTarball) { $ninja } else { 'ninja.exe' })) -ArgumentList $ninjaArgs -NoNewWindow -PassThru
+    if (-not $proc.WaitForExit([int]$env:UNVEIL_BUILD_TIMEOUT * 1000)) {
+      # Ninja reruns whatever was mid-build: it isn't in .ninja_log yet.
+      & taskkill.exe /PID $proc.Id /T /F | Out-Null
+      throw "The build timed out after $env:UNVEIL_BUILD_TIMEOUT s"
+    }
+    if ($proc.ExitCode -ne 0) { throw "ninja failed with exit code $($proc.ExitCode)" }
+  } elseif ($fromTarball) {
+    Invoke-Checked $ninja -C out\Release @targets @args
+  } else {
+    Invoke-Checked autoninja.bat -C out\Release @targets @args
+  }
 } finally { Pop-Location }
 
 if (-not $NoPackage) { & (Join-Path $PSScriptRoot 'package-release.ps1') }

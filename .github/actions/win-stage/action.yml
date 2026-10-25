@@ -1,0 +1,112 @@
+# One stage of the Windows build (see .github/workflows/build.yml): get the
+# build tree from the stage before (or the Chromium source, in the first),
+# build for a few hours, then hand the tree on, or the packages when done.
+name: Windows build stage
+inputs:
+  first:
+    description: Whether this is the first stage, which fetches the source.
+    default: "false"
+  last:
+    description: Whether this is the last stage, which fails if the build isn't done.
+    default: "false"
+  timeout:
+    description: How long ninja may run, in seconds.
+    required: true
+outputs:
+  status:
+    description: "running: the next stage carries on; done: dist\\ has the packages."
+    value: ${{ steps.build.outputs.status }}
+runs:
+  using: composite
+  steps:
+    - name: Where to build
+      id: where
+      shell: pwsh
+      run: |
+        # The source and the build need ~70 GB: the drive with the most room
+        # (the same on every stage, as the runners are alike). A short root,
+        # for Windows' path length limit.
+        Get-PSDrive -PSProvider FileSystem | Format-Table Name, @{n='FreeGB';e={[math]::Round($_.Free/1GB)}}
+        $drive = Get-PSDrive -PSProvider FileSystem | Where-Object { $_.Name -in 'C', 'D' } | Sort-Object Free -Descending | Select-Object -First 1
+        "drive=$($drive.Name):\" >> $env:GITHUB_OUTPUT
+        "root=$($drive.Name):\ub" >> $env:GITHUB_OUTPUT
+    - name: No real-time scanning of the build
+      shell: pwsh
+      # Defender scanning every file of the tree slows unpacking and the
+      # build a lot; the runner is thrown away after the job.
+      run: Set-MpPreference -DisableRealtimeMonitoring $true -ErrorAction SilentlyContinue
+    - uses: actions/setup-node@v7
+      with:
+        node-version: 22
+        cache: npm
+    - uses: actions/setup-python@v7
+      with:
+        python-version: "3.12"
+    - name: Shell dependencies
+      shell: pwsh
+      run: npm ci
+    - name: Filter lists
+      shell: pwsh
+      # With curl, for the shell's build (UNVEIL_LISTS_DIR): Node's fetch
+      # crashes on them now and then on these runners (an undici assertion).
+      run: |
+        $lists = Join-Path $env:RUNNER_TEMP 'lists'
+        New-Item -ItemType Directory -Force $lists | Out-Null
+        foreach ($name in 'easylist', 'easyprivacy') {
+          curl.exe -fsSL --retry 5 -o (Join-Path $lists "$name.txt") "https://easylist.to/easylist/$name.txt"
+          if ($LASTEXITCODE -ne 0) { throw "$name failed" }
+        }
+        "UNVEIL_LISTS_DIR=$lists" >> $env:GITHUB_ENV
+    - name: Get the build tree from the stage before
+      if: inputs.first != 'true'
+      uses: actions/download-artifact@v8
+      with:
+        name: windows-tree
+        path: ${{ runner.temp }}\artifact
+    - name: Unpack the build tree
+      if: inputs.first != 'true'
+      shell: cmd
+      run: |
+        zstd -d -c "%RUNNER_TEMP%\artifact\windows-tree.tar.zst" | "%SystemRoot%\System32\tar.exe" -xf - -C ${{ steps.where.outputs.drive }}
+        if errorlevel 1 exit /b 1
+        rmdir /s /q "%RUNNER_TEMP%\artifact"
+    - name: Build
+      id: build
+      shell: pwsh
+      env:
+        CHROMIUM_SRC: ${{ steps.where.outputs.root }}\src
+        UNVEIL_BUILD_TIMEOUT: ${{ inputs.timeout }}
+      run: chromium\scripts\win\ci-stage.ps1
+    - name: Not done in the last stage
+      if: inputs.last == 'true' && steps.build.outputs.status != 'done'
+      shell: pwsh
+      run: |
+        Write-Host "::error::The build didn't finish in the stages there are: add stages to .github/workflows/build.yml."
+        exit 1
+    - name: Pack the build tree
+      if: steps.build.outputs.status == 'running'
+      shell: cmd
+      run: |
+        "%SystemRoot%\System32\tar.exe" -cf - -C ${{ steps.where.outputs.drive }} ub | zstd -T0 -3 -o "%RUNNER_TEMP%\windows-tree.tar.zst"
+        if errorlevel 1 exit /b 1
+        dir "%RUNNER_TEMP%\windows-tree.tar.zst"
+    - name: Hand the build tree on
+      if: steps.build.outputs.status == 'running'
+      uses: actions/upload-artifact@v7
+      with:
+        name: windows-tree
+        path: ${{ runner.temp }}\windows-tree.tar.zst
+        compression-level: 0
+        retention-days: 2
+        overwrite: true
+    - name: Upload the packages
+      if: steps.build.outputs.status == 'done'
+      uses: actions/upload-artifact@v7
+      with:
+        name: unveil-windows-x64
+        path: |
+          dist\*.exe
+          dist\*.zip
+          dist\SHA256SUMS.txt
+        compression-level: 0
+        if-no-files-found: error

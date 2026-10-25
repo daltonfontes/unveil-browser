@@ -8,7 +8,7 @@ set -euo pipefail
 
 sudo apt-get update
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-  bison clang-format curl flex git golang-go gperf lsb-release ninja-build \
+  bison clang-format curl flex git gperf lsb-release ninja-build \
   pkg-config python3 python3-httplib2 python3-jinja2 python3-pyparsing \
   python3-setuptools python3-six rsync xz-utils zstd
 

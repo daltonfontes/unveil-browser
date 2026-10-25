@@ -1,12 +1,19 @@
 # Builds Unveil for people to download: by hand (Actions > build > Run
-# workflow), or for a release when a v* tag is pushed (the release then gets
-# the packages). Chromium takes longer to build than a GitHub runner may run
-# a job (6 hours), so the build is split in stages: each builds for about 5
-# hours and hands the build tree to the next, which carries on where it
-# stopped. Stages after the build is done are skipped.
+# workflow, for Linux, Windows or both), or for a release when a v* tag is
+# pushed (the release then gets the packages of both). Chromium takes longer
+# to build than a GitHub runner may run a job (6 hours), so each build is
+# split in stages: each builds for about 5 hours and hands the build tree to
+# the next, which carries on where it stopped. Stages after the build is
+# done are skipped.
 name: build
 on:
   workflow_dispatch:
+    inputs:
+      platforms:
+        description: What to build
+        type: choice
+        options: [all, linux, windows]
+        default: all
   push:
     tags: ["v*"]
 
@@ -14,7 +21,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: build-${{ github.ref }}
+  group: build-${{ github.ref }}-${{ inputs.platforms || 'all' }}
   cancel-in-progress: true
 
 jobs:
@@ -22,6 +29,7 @@ jobs:
     name: Linux, stage 1
     runs-on: ubuntu-24.04
     timeout-minutes: 355
+    if: inputs.platforms != 'windows'
     outputs:
       status: ${{ steps.stage.outputs.status }}
     steps:
@@ -168,18 +176,204 @@ jobs:
           last: "true"
           timeout: 16800
 
+  windows-1:
+    name: Windows, stage 1
+    runs-on: windows-2025
+    timeout-minutes: 355
+    if: inputs.platforms != 'linux'
+    outputs:
+      status: ${{ steps.stage.outputs.status }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/win-stage
+        id: stage
+        with:
+          first: "true"
+          timeout: 10800
+
+  windows-2:
+    name: Windows, stage 2
+    runs-on: windows-2025
+    timeout-minutes: 355
+    needs: windows-1
+    if: needs.windows-1.outputs.status == 'running'
+    outputs:
+      status: ${{ steps.stage.outputs.status }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/win-stage
+        id: stage
+        with:
+          timeout: 14400
+
+  windows-3:
+    name: Windows, stage 3
+    runs-on: windows-2025
+    timeout-minutes: 355
+    needs: windows-2
+    if: needs.windows-2.outputs.status == 'running'
+    outputs:
+      status: ${{ steps.stage.outputs.status }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/win-stage
+        id: stage
+        with:
+          timeout: 14400
+
+  windows-4:
+    name: Windows, stage 4
+    runs-on: windows-2025
+    timeout-minutes: 355
+    needs: windows-3
+    if: needs.windows-3.outputs.status == 'running'
+    outputs:
+      status: ${{ steps.stage.outputs.status }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/win-stage
+        id: stage
+        with:
+          timeout: 14400
+
+  windows-5:
+    name: Windows, stage 5
+    runs-on: windows-2025
+    timeout-minutes: 355
+    needs: windows-4
+    if: needs.windows-4.outputs.status == 'running'
+    outputs:
+      status: ${{ steps.stage.outputs.status }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/win-stage
+        id: stage
+        with:
+          timeout: 14400
+
+  windows-6:
+    name: Windows, stage 6
+    runs-on: windows-2025
+    timeout-minutes: 355
+    needs: windows-5
+    if: needs.windows-5.outputs.status == 'running'
+    outputs:
+      status: ${{ steps.stage.outputs.status }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/win-stage
+        id: stage
+        with:
+          timeout: 14400
+
+  windows-7:
+    name: Windows, stage 7
+    runs-on: windows-2025
+    timeout-minutes: 355
+    needs: windows-6
+    if: needs.windows-6.outputs.status == 'running'
+    outputs:
+      status: ${{ steps.stage.outputs.status }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/win-stage
+        id: stage
+        with:
+          timeout: 14400
+
+  windows-8:
+    name: Windows, stage 8
+    runs-on: windows-2025
+    timeout-minutes: 355
+    needs: windows-7
+    if: needs.windows-7.outputs.status == 'running'
+    outputs:
+      status: ${{ steps.stage.outputs.status }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/win-stage
+        id: stage
+        with:
+          timeout: 14400
+
+  windows-9:
+    name: Windows, stage 9
+    runs-on: windows-2025
+    timeout-minutes: 355
+    needs: windows-8
+    if: needs.windows-8.outputs.status == 'running'
+    outputs:
+      status: ${{ steps.stage.outputs.status }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/win-stage
+        id: stage
+        with:
+          timeout: 14400
+
+  windows-10:
+    name: Windows, stage 10
+    runs-on: windows-2025
+    timeout-minutes: 355
+    needs: windows-9
+    if: needs.windows-9.outputs.status == 'running'
+    outputs:
+      status: ${{ steps.stage.outputs.status }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/win-stage
+        id: stage
+        with:
+          timeout: 14400
+
+  windows-11:
+    name: Windows, stage 11
+    runs-on: windows-2025
+    timeout-minutes: 355
+    needs: windows-10
+    if: needs.windows-10.outputs.status == 'running'
+    outputs:
+      status: ${{ steps.stage.outputs.status }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/win-stage
+        id: stage
+        with:
+          timeout: 14400
+
+  windows-12:
+    name: Windows, stage 12
+    runs-on: windows-2025
+    timeout-minutes: 355
+    needs: windows-11
+    if: needs.windows-11.outputs.status == 'running'
+    outputs:
+      status: ${{ steps.stage.outputs.status }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/win-stage
+        id: stage
+        with:
+          last: "true"
+          timeout: 14400
+
   release:
     name: Release
-    if: ${{ !cancelled() && startsWith(github.ref, 'refs/tags/v') && contains(join(needs.*.outputs.status, ','), 'done') }}
-    needs: [linux-1, linux-2, linux-3, linux-4, linux-5, linux-6, linux-7, linux-8, linux-9, linux-10]
+    # Both builds done: one stage of each says so.
+    if: >-
+      !cancelled() && startsWith(github.ref, 'refs/tags/v') &&
+      (needs.linux-1.outputs.status == 'done' || needs.linux-2.outputs.status == 'done' || needs.linux-3.outputs.status == 'done' || needs.linux-4.outputs.status == 'done' || needs.linux-5.outputs.status == 'done' || needs.linux-6.outputs.status == 'done' || needs.linux-7.outputs.status == 'done' || needs.linux-8.outputs.status == 'done' || needs.linux-9.outputs.status == 'done' || needs.linux-10.outputs.status == 'done') &&
+      (needs.windows-1.outputs.status == 'done' || needs.windows-2.outputs.status == 'done' || needs.windows-3.outputs.status == 'done' || needs.windows-4.outputs.status == 'done' || needs.windows-5.outputs.status == 'done' || needs.windows-6.outputs.status == 'done' || needs.windows-7.outputs.status == 'done' || needs.windows-8.outputs.status == 'done' || needs.windows-9.outputs.status == 'done' || needs.windows-10.outputs.status == 'done' || needs.windows-11.outputs.status == 'done' || needs.windows-12.outputs.status == 'done')
+    needs: [linux-1, linux-2, linux-3, linux-4, linux-5, linux-6, linux-7, linux-8, linux-9, linux-10, windows-1, windows-2, windows-3, windows-4, windows-5, windows-6, windows-7, windows-8, windows-9, windows-10, windows-11, windows-12]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
       - uses: actions/download-artifact@v8
         with:
-          name: unveil-linux-x64
+          pattern: unveil-*
           path: dist
+          merge-multiple: true
       - name: Create the release
         env:
           GH_TOKEN: ${{ github.token }}

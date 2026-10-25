@@ -29,6 +29,14 @@ function Invoke-Checked {
   if ($LASTEXITCODE -ne 0) { throw "$Command $($Arguments -join ' ') failed with exit code $LASTEXITCODE" }
 }
 
+function Get-SevenZip {
+  # 7-Zip's 7z.exe, on PATH or where its installer puts it.
+  $found = @((Get-Command 7z.exe -ErrorAction SilentlyContinue).Source, "$env:ProgramFiles\7-Zip\7z.exe") |
+    Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
+  if (-not $found) { throw '7-Zip not found: install it from https://www.7-zip.org' }
+  $found
+}
+
 function Step([string]$Message) {
   Write-Host "`n== $Message" -ForegroundColor Cyan
 }

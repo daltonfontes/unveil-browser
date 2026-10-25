@@ -11,9 +11,7 @@ $out = Join-Path $ChromiumSrc 'out/Release'
 $dist = Join-Path $UnveilRoot 'dist'
 New-Item -ItemType Directory -Force $dist | Out-Null
 
-$sevenZip = @((Get-Command 7z.exe -ErrorAction SilentlyContinue).Source, "$env:ProgramFiles\7-Zip\7z.exe") |
-  Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
-if (-not $sevenZip) { throw '7-Zip not found: install it from https://www.7-zip.org' }
+$sevenZip = Get-SevenZip
 
 $installer = Join-Path $dist "Unveil-$version-x64-installer.exe"
 Copy-Item (Join-Path $out 'mini_installer.exe') $installer

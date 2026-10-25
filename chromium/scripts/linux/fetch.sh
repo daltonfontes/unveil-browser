@@ -60,7 +60,11 @@ fi
 
 if [ ! -x out/gn ]; then
   step "gn"
-  python3 tools/gn/bootstrap/bootstrap.py -o out/gn --skip-generate-buildfiles
+  # With Chromium's clang: gn needs C++23 (std::expected), which an older
+  # system compiler may not have.
+  llvm="$CHROMIUM_SRC/third_party/llvm-build/Release+Asserts/bin"
+  CC="$llvm/clang" CXX="$llvm/clang++" AR="$llvm/llvm-ar" \
+    python3 tools/gn/bootstrap/bootstrap.py -o out/gn --skip-generate-buildfiles
 fi
 
 echo

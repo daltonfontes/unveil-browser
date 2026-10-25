@@ -7,8 +7,9 @@ DirectX and WebAuthn headers, gperf, the Windows gn, Node, TypeScript, 7-Zip
 for the installer...), and the prebuilt tools that are in it are Linux ones.
 This reads DEPS as gclient would for a Windows checkout and fetches those:
 git dependencies as archives from Chromium's gitiles, CIPD packages with the
-CIPD client, and GCS objects from Google Cloud Storage. Safe to run again:
-each dependency it fetched has a stamp, and is skipped next time.
+CIPD client, GCS objects from Google Cloud Storage, and the files its hooks
+download by their .sha1 (rc.exe). Safe to run again: each dependency it
+fetched has a stamp, and is skipped next time.
 
   python3 fetch_deps.py <chromium src> [--cipd <cipd client>] [--plan]
 """
@@ -87,6 +88,26 @@ def load_deps(deps_file, parent_vars=None):
   variables.update(WIN_VARS)
   return (scope.get('deps', {}), scope.get('recursedeps', []),
           scope.get('use_relative_paths', False), variables)
+
+
+def scope_hooks(src, deps_file):
+  scope = {}
+  exec(open(os.path.join(src, deps_file), encoding='utf-8').read(),
+       {'Var': lambda name: scope['vars'][name], 'Str': str, '__builtins__': {}}, scope)
+  return scope.get('hooks', [])
+
+
+def fetch_hook(src, rel, bucket, sha1_rel):
+  sha1 = open(os.path.join(src, sha1_rel), encoding='utf-8').read().strip()
+  path = os.path.join(src, rel)
+  if os.path.isfile(path) and hashlib.sha1(open(path, 'rb').read()).hexdigest() == sha1:
+    return
+  print(f'gcs  {rel} ({bucket})', flush=True)
+  data = fetch(f'https://storage.googleapis.com/{bucket}/{sha1}')
+  if hashlib.sha1(data).hexdigest() != sha1:
+    raise SystemExit(f'{rel}: checksum mismatch')
+  with open(path, 'wb') as f:
+    f.write(data)
 
 
 def holds(condition, variables):
@@ -169,6 +190,20 @@ def plan(src, deps_file='DEPS', prefix='', parent_vars=None):
       win = [o for o in objects if mentions_win(o.get('condition')) or mentions_win(condition)]
       if win:
         todo.append(('gcs', rel, (dep['bucket'], win)))
+
+  # Files a checkout gets from a hook, not a dependency: those that
+  # download_from_google_storage.py fetches by their .sha1 (Chromium's rc.exe).
+  if not prefix:
+    for hook in scope_hooks(src, deps_file):
+      action = hook.get('action', [])
+      if (not mentions_win(hook.get('condition')) or not holds(hook.get('condition'), variables)
+          or not any(a.endswith('download_from_google_storage.py') for a in action)
+          or '-s' not in action or '--directory' in action):
+        continue
+      bucket = action[action.index('--bucket') + 1]
+      sha1_file = action[action.index('-s') + 1]
+      rel = sha1_file[len('src/'):]
+      todo.append(('hook', rel[:-len('.sha1')], (bucket, rel)))
 
   for path in recursedeps:
     if isinstance(path, (list, tuple)):
@@ -259,13 +294,15 @@ def main():
   todo = plan(args.src)
   for kind, rel, details in todo:
     if args.plan:
-      what = details if kind == 'git' else (
+      what = details if kind in ('git', 'hook') else (
           [p['package'] for p in details] if kind == 'cipd' else [o['object_name'] for o in details[1]])
       print(f'{kind:4} {rel}: {what}')
     elif kind == 'git':
       fetch_git(args.src, rel, details)
     elif kind == 'cipd':
       fetch_cipd(args.src, rel, details, args.cipd)
+    elif kind == 'hook':
+      fetch_hook(args.src, rel, *details)
     else:
       fetch_gcs(args.src, rel, *details)
 

@@ -21,8 +21,10 @@ $env:DEPOT_TOOLS_WIN_TOOLCHAIN = '0'
 
 function Invoke-Checked {
   # Runs a native command and stops on a non-zero exit code (PowerShell 5
-  # doesn't, by itself).
-  param([Parameter(Mandatory)][string]$Command, [Parameter(ValueFromRemainingArguments)][string[]]$Arguments)
+  # doesn't, by itself). A plain function on purpose: with a param() block,
+  # PowerShell would take the command's own flags (-o, -C...) for its
+  # common parameters (-OutVariable...).
+  $Command, $Arguments = $args
   & $Command @Arguments
   if ($LASTEXITCODE -ne 0) { throw "$Command $($Arguments -join ' ') failed with exit code $LASTEXITCODE" }
 }

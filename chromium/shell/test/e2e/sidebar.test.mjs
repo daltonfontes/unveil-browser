@@ -192,6 +192,14 @@ test('split view: a tab beside the current one shares its row; ending the split 
     return [left.id, right.id];
   }, { id: windowId, base: `http://127.0.0.1:${port}` });
   const splitIds = () => worker.evaluate((ids) => Promise.all(ids.map((i) => chrome.tabs.get(i).then((t) => t.splitViewId))), [left, right]);
+  // Switching to the Space above also activates its last tab, and on a busy
+  // machine that lands after `left` was made active: make `left` active again.
+  await eventually(() => worker.evaluate(async ({ id, left }) => {
+    const [active] = await chrome.tabs.query({ active: true, windowId: id });
+    if (active?.id === left) return true;
+    await chrome.tabs.update(left, { active: true });
+    return false;
+  }, { id: windowId, left }), 'Page left is the current tab');
 
   await eventually(async () => (await todayTitles()).includes('Page right'), 'Page right shows');
   await sidebar.locator('#today .row', { hasText: 'Page right' }).click({ button: 'right' });

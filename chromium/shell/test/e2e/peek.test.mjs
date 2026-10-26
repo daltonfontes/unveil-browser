@@ -85,6 +85,19 @@ const peekPage = async (name) => {
   }, `the peek of ${name} shows up`);
   return found;
 };
+// Runs `act` on the peeked page, finding it again if the one found was that
+// brief tab and closed under us.
+const onPeek = async (name, act) => {
+  for (let i = 0; ; i++) {
+    const page = await peekPage(name);
+    try {
+      await act(page);
+      return page;
+    } catch (e) {
+      if (i >= 4 || !page.isClosed()) throw e;
+    }
+  }
+};
 
 test('a link from a pinned tab opens in Peek, not a new tab; Esc closes it', async () => {
   await sidebar.locator('#today .row', { hasText: 'Page docs' }).click({ button: 'right' });
@@ -96,17 +109,15 @@ test('a link from a pinned tab opens in Peek, not a new tab; Esc closes it', asy
   await eventually(async () => (await popups()).some((w) => w.url?.endsWith('/article-docs')), async () => `popups: ${JSON.stringify(await popups())}`);
   assert.ok(!(await tabsOf(windowId)).some((u) => u?.includes('/article-')), 'no new tab in the window');
 
-  const page = await peekPage('docs');
   // Only the key down: the peek is gone before a key up could reach it.
-  await page.keyboard.down('Escape');
+  await onPeek('docs', (page) => page.keyboard.down('Escape'));
   await eventually(async () => (await popups()).length === 0, 'Esc closes the peek');
 });
 
 test('"Open as tab" moves the peek into its window', async () => {
   const pinned = context.pages().find((p) => p.url() === `${base}/docs`);
   await pinned.click('#out');
-  const page = await peekPage('docs');
-  await page.locator('unveil-peek #promote').click();
+  const page = await onPeek('docs', (page) => page.locator('unveil-peek #promote').click({ timeout: 5000 }));
   await eventually(async () => (await popups()).length === 0, 'the peek window goes');
   await eventually(async () => (await tabsOf(windowId)).some((u) => u?.endsWith('/article-docs')), 'it is a tab of the window now');
   await eventually(async () => (await sidebar.locator('#today .row', { hasText: 'Page article-docs' }).count()) === 1, 'in Today, in the same Space');
@@ -119,8 +130,7 @@ test('"Open in Peek" for any link (the link menu runs this); ✕ closes it', asy
   const opened = await sidebar.evaluate(({ url, windowId }) => chrome.runtime.sendMessage({ peek: { type: 'open', url, windowId } }),
     { url: `${base}/article-menu`, windowId });
   assert.ok(opened.ok);
-  const page = await peekPage('menu');
-  await page.locator('unveil-peek #close').click();
+  await onPeek('menu', (page) => page.locator('unveil-peek #close').click({ timeout: 5000 }));
   await eventually(async () => (await popups()).length === 0, async () => `✕ closes it: ${JSON.stringify(await popups())}`);
 });
 

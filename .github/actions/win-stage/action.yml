@@ -12,6 +12,9 @@ inputs:
   timeout:
     description: How long ninja may run, in seconds.
     required: true
+  resume-run:
+    description: An earlier run whose saved build tree the first stage carries on from.
+    default: ""
 outputs:
   status:
     description: "running: the next stage carries on; done: dist\\ has the packages."
@@ -58,13 +61,15 @@ runs:
         }
         "UNVEIL_LISTS_DIR=$lists" >> $env:GITHUB_ENV
     - name: Get the build tree from the stage before
-      if: inputs.first != 'true'
+      if: inputs.first != 'true' || inputs.resume-run != ''
       uses: actions/download-artifact@v8
       with:
+        run-id: ${{ inputs.resume-run || github.run_id }}
+        github-token: ${{ github.token }}
         name: windows-tree
         path: ${{ runner.temp }}\artifact
     - name: Unpack the build tree
-      if: inputs.first != 'true'
+      if: inputs.first != 'true' || inputs.resume-run != ''
       shell: cmd
       run: |
         zstd -d -c "%RUNNER_TEMP%\artifact\windows-tree.tar.zst" | "%SystemRoot%\System32\tar.exe" -xf - -C ${{ steps.where.outputs.drive }}

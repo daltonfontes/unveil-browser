@@ -141,7 +141,7 @@ chromium/scripts/linux/package.sh        # dist/unveil-<versão>-linux-x64.tar.x
 
 ### Builds na nuvem
 
-O workflow [`build`](.github/workflows/build.yml) compila o Unveil para Linux e Windows nos runners gratuitos do GitHub Actions: rode à mão em Actions → build → Run workflow (Linux, Windows ou os dois), ou envie uma tag `v*` para ele criar a release com os pacotes dos dois. O Chromium demora mais que as 6 horas que um job pode durar, então o build é dividido em etapas de umas 5 horas, e cada etapa entrega a árvore do build para a próxima, que continua de onde parou. Um build completo leva de 15 a 25 horas.
+O workflow [`build`](.github/workflows/build.yml) compila o Unveil para Linux e Windows nos runners gratuitos do GitHub Actions: rode à mão em Actions → build → Run workflow (Linux, Windows ou os dois), ou envie uma tag `v*` para ele criar a release com os pacotes dos dois. O Chromium demora mais que as 6 horas que um job pode durar, então o build é dividido em etapas de umas 5 horas, e cada etapa entrega a árvore do build para a próxima, que continua de onde parou. Se uma etapa falhar, dá para corrigir e retomar da árvore salva pela etapa anterior em vez de começar do zero: dispare o workflow com o ID daquele run em `resume_from` (a árvore fica guardada por 2 dias). Um build completo leva umas 10 horas no Linux e umas 15 no Windows.
 
 ## Organização do repositório
 

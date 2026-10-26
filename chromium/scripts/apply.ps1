@@ -7,6 +7,20 @@ $theme = 'chrome/app/theme'
 $strings = @('chrome/app/chromium_strings.grd', 'chrome/app/settings_chromium_strings.grdp', 'chrome/app/resources')
 $patches = Get-ChildItem (Join-Path $UnveilChromium 'patches') -Filter *.patch | Sort-Object Name
 
+function Use-LF {
+  # The files the patches touch keep Chromium's LF line ends: git on Windows
+  # (core.autocrlf) writes CRLF, which Chromium's IDL parser rejects. Only
+  # files that have CRs are rewritten, so ninja rebuilds nothing else.
+  foreach ($patch in $patches) {
+    foreach ($line in (Get-Content $patch.FullName | Where-Object { $_ -like '+++ b/*' })) {
+      $file = Join-Path $ChromiumSrc $line.Substring(6)
+      if (-not (Test-Path $file)) { continue }
+      $text = [System.IO.File]::ReadAllText($file)
+      if ($text.Contains("`r`n")) { [System.IO.File]::WriteAllText($file, $text.Replace("`r`n", "`n")) }
+    }
+  }
+}
+
 Push-Location $ChromiumSrc
 try {
   # The source tarball (win\fetch-tarball.ps1) isn't a git checkout, so it
@@ -14,6 +28,7 @@ try {
   # source after a version change).
   $isGit = Test-Path '.git'
   if (-not $isGit -and (Test-Path '.unveil-applied')) {
+    Use-LF
     Write-Host "Unveil is already applied to $ChromiumSrc"
     return
   }
@@ -42,8 +57,9 @@ try {
 
   foreach ($patch in $patches) {
     Write-Host "patch: $($patch.Name)"
-    Invoke-Checked git apply $patch.FullName
+    Invoke-Checked git -c core.autocrlf=false apply $patch.FullName
   }
+  Use-LF
 
   Invoke-Checked node (Join-Path $PSScriptRoot 'rebrand.mjs') $ChromiumSrc
   if (-not $isGit) { New-Item -ItemType File '.unveil-applied' | Out-Null }

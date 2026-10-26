@@ -14,11 +14,17 @@ on:
         type: choice
         options: [all, linux, windows]
         default: all
+      resume_from:
+        description: Carry on from the build tree a stage of this earlier run saved (its run ID), instead of from scratch
+        type: string
+        default: ""
   push:
     tags: ["v*"]
 
 permissions:
   contents: read
+  # To get a build tree saved by an earlier run (resume_from).
+  actions: read
 
 concurrency:
   group: build-${{ github.ref }}-${{ inputs.platforms || 'all' }}
@@ -38,6 +44,7 @@ jobs:
         id: stage
         with:
           first: "true"
+          resume-run: ${{ inputs.resume_from }}
           timeout: 14400
 
   linux-2:
@@ -189,6 +196,7 @@ jobs:
         id: stage
         with:
           first: "true"
+          resume-run: ${{ inputs.resume_from }}
           timeout: 10800
 
   windows-2:

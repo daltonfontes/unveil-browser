@@ -12,6 +12,9 @@ inputs:
   timeout:
     description: How long ninja may run, in seconds.
     required: true
+  resume-run:
+    description: An earlier run whose saved build tree the first stage carries on from.
+    default: ""
 outputs:
   status:
     description: "running: the next stage carries on; done: dist/ has the package."
@@ -41,13 +44,15 @@ runs:
         chromium/scripts/linux/install-deps.sh
         npm ci
     - name: Get the build tree from the stage before
-      if: inputs.first != 'true'
+      if: inputs.first != 'true' || inputs.resume-run != ''
       uses: actions/download-artifact@v8
       with:
+        run-id: ${{ inputs.resume-run || github.run_id }}
+        github-token: ${{ github.token }}
         name: linux-tree
         path: ${{ runner.temp }}/artifact
     - name: Unpack the build tree
-      if: inputs.first != 'true'
+      if: inputs.first != 'true' || inputs.resume-run != ''
       shell: bash
       run: |
         zstd -d -c "$RUNNER_TEMP/artifact/linux-tree.tar.zst" | tar -xf - -C /mnt

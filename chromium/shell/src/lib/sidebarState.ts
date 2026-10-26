@@ -9,7 +9,6 @@
 export interface Space {
   id: string;
   name: string;
-  emoji: string;
   /** A hue in degrees: the sidebar is tinted with it. */
   hue: number;
   /** Its tabs have cookies and logins of their own (lib/partitions.ts). */
@@ -56,7 +55,7 @@ export const ARCHIVE_LIMIT = 500;
 export const ARCHIVE_CHOICES = [12, 24, 24 * 7, 24 * 30, 0];
 
 export const DEFAULT_DATA: SidebarData = {
-  spaces: [{ id: 'personal', name: 'Pessoal', emoji: '🏠', hue: 172 }],
+  spaces: [{ id: 'personal', name: 'Pessoal', hue: 172 }],
   favorites: [],
   pinned: {},
   archive: [],

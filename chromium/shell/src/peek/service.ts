@@ -182,7 +182,11 @@ export function startPeek() {
   });
 }
 
-/** A new tab's URL, which a link click may only report after creating it. */
+/**
+ * A new tab's URL, which a link click may only report after creating it. The
+ * update can come before this listens (onCreated awaits storage first), so
+ * the tab is asked too.
+ */
 function urlOnceKnown(tabId: number): Promise<string | undefined> {
   return new Promise((resolve) => {
     const timer = setTimeout(() => done(undefined), 2000);
@@ -195,5 +199,10 @@ function urlOnceKnown(tabId: number): Promise<string | undefined> {
       resolve(url);
     }
     chrome.tabs.onUpdated.addListener(listener);
+    chrome.tabs.get(tabId).then((tab) => {
+      // Not about:blank, which a tab can show before its link loads.
+      const url = tab.pendingUrl || tab.url;
+      if (isWebUrl(url)) done(url);
+    }, () => done(undefined));
   });
 }

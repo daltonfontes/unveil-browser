@@ -109,10 +109,9 @@ test('favourites show as icons, on every Space', async () => {
 test('Spaces: a new Space starts with a new tab; the others\' tabs are out of sight', async () => {
   await sidebar.locator('#add-space').click();
   await sidebar.fill('#space-name', 'Work');
-  await sidebar.fill('#space-emoji', '💼');
   await sidebar.locator('#space-dialog button[value=save]').click();
   await eventually(async () => (await sidebar.locator('.space').count()) === 2, 'two Spaces');
-  await eventually(async () => (await sidebar.locator('.space.current').innerText()) === '💼', 'Work is current');
+  await eventually(async () => (await sidebar.locator('.space.current').getAttribute('title'))?.startsWith('Work'), 'Work is current');
   // Its own (new) tab, none of the first Space's; the favourite stays.
   await eventually(async () => (await sidebar.locator('#today .row').count()) === 1, `today: ${await todayTitles()}`);
   assert.equal(await sidebar.locator('#pinned .row').count(), 0);
@@ -129,7 +128,7 @@ test('moving a tab to another Space', async () => {
   await sidebar.locator('#today .row', { hasText: 'Page d' }).click({ button: 'right' });
   await sidebar.locator('#menu button', { hasText: 'Work' }).click();
   await eventually(async () => !(await todayTitles()).includes('Page d'), 'Page d leaves this Space');
-  await sidebar.locator('.space', { hasText: '💼' }).click();
+  await sidebar.locator('.space[title^="Work"]').click();
   await eventually(async () => (await todayTitles()).includes('Page d'), 'Page d is in Work');
 });
 
@@ -193,6 +192,14 @@ test('split view: a tab beside the current one shares its row; ending the split 
     return [left.id, right.id];
   }, { id: windowId, base: `http://127.0.0.1:${port}` });
   const splitIds = () => worker.evaluate((ids) => Promise.all(ids.map((i) => chrome.tabs.get(i).then((t) => t.splitViewId))), [left, right]);
+  // Switching to the Space above also activates its last tab, and on a busy
+  // machine that lands after `left` was made active: make `left` active again.
+  await eventually(() => worker.evaluate(async ({ id, left }) => {
+    const [active] = await chrome.tabs.query({ active: true, windowId: id });
+    if (active?.id === left) return true;
+    await chrome.tabs.update(left, { active: true });
+    return false;
+  }, { id: windowId, left }), 'Page left is the current tab');
 
   await eventually(async () => (await todayTitles()).includes('Page right'), 'Page right shows');
   await sidebar.locator('#today .row', { hasText: 'Page right' }).click({ button: 'right' });

@@ -1,0 +1,16 @@
+--- a/chrome/browser/ui/views/toolbar/avatar_toolbar_button_interface.cc
++++ b/chrome/browser/ui/views/toolbar/avatar_toolbar_button_interface.cc
+@@ -21,9 +21,11 @@ bool AvatarToolbarButtonInterface::CanShowForProfile(Profile* profile) {
+           profile->GetOTRProfileID().IsCaptivePortal());
+ #else
+   // DevTools profiles are OffTheRecord, so hide it there.
++  // Unveil: no profile button in a regular window. Unveil has no Google
++  // sign-in or sync (no API keys), so the button only ever said "Error";
++  // Spaces take the place of profiles. Incognito and Guest keep their badge.
+   return profile->IsIncognitoProfile() || profile->IsGuestSession() ||
+-         profile->IsEnterpriseIsolatedModeProfile() ||
+-         profile->IsRegularProfile();
++         profile->IsEnterpriseIsolatedModeProfile();
+ #endif
+ }
+ 

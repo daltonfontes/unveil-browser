@@ -69,6 +69,23 @@ function icon(url: string | undefined) {
   return el('img', { className: 'icon', src: favicon(url), alt: '', width: 16, height: 16 });
 }
 
+// Line icons, drawn in the text color (no emoji: they look different on
+// every system and some have none).
+const ICON_PATHS = {
+  sound: '<path d="M3 6h2.5L9 3v10L5.5 10H3z"/><path d="M11.5 5.5a3.5 3.5 0 0 1 0 5"/>',
+  muted: '<path d="M3 6h2.5L9 3v10L5.5 10H3z"/><path d="m11 6 3.5 4m0-4L11 10"/>',
+};
+function lineIcon(name: keyof typeof ICON_PATHS) {
+  const span = el('span', { className: 'line-icon' });
+  span.innerHTML = `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">${ICON_PATHS[name]}</svg>`;
+  return span;
+}
+
+/** A Space's badge: its initial on a dot of its hue. */
+function spaceInitial(name: string) {
+  return [...name.trim()][0]?.toUpperCase() ?? '';
+}
+
 function closeButton(onClose: () => void, label: string) {
   const button = el('button', { className: 'close', textContent: '×', title: label });
   button.addEventListener('click', (e) => {
@@ -91,7 +108,11 @@ function tabRow(tab: Tab) {
   row.dataset.tabId = String(tab.id);
   row.title = `${tab.title ?? ''}\n${tab.url ?? ''}`;
   row.append(icon(tab.url || tab.pendingUrl), el('span', { className: 'title', textContent: tab.title || tab.url || t('sidebarNewTab') }));
-  if (tab.audible) row.append(el('span', { className: 'audio', textContent: tab.mutedInfo?.muted ? '🔇' : '🔊' }));
+  if (tab.audible) {
+    const audio = lineIcon(tab.mutedInfo?.muted ? 'muted' : 'sound');
+    audio.classList.add('audio');
+    row.append(audio);
+  }
   row.append(closeButton(() => run({ type: 'close', tabId: tab.id! }), t('sidebarClose')));
   row.addEventListener('click', () => run({ type: 'activate', tabId: tab.id! }));
   row.addEventListener('auxclick', (e) => e.button === 1 && run({ type: 'close', tabId: tab.id! }));
@@ -144,7 +165,7 @@ function tabMenu(tab: Tab): MenuItem[] {
     { label: t('sidebarAddFavorite'), action: () => run({ type: 'favorite', tabId: tab.id! }) },
     ...(others.length
       ? ['separator' as const, { heading: t('sidebarMoveTo') }, ...others.map((s) => ({
-          label: `${s.emoji} ${s.name}`,
+          label: s.name,
           action: () => run({ type: 'moveToSpace', tabId: tab.id!, spaceId: s.id }),
         }))]
       : []),
@@ -282,7 +303,6 @@ function editSpace(space: Space | null) {
   chosenHue = space?.hue ?? HUES[data.spaces.length % HUES.length];
   $('#space-dialog-title').textContent = t(space ? 'sidebarEditSpace' : 'sidebarNewSpace');
   $<HTMLInputElement>('#space-name').value = space?.name ?? '';
-  $<HTMLInputElement>('#space-emoji').value = space?.emoji ?? '✨';
   $('#space-delete').hidden = !space || data.spaces.length < 2;
   const separate = $<HTMLInputElement>('#space-separate');
   separate.checked = !!space?.separateCookies;
@@ -295,11 +315,10 @@ function editSpace(space: Space | null) {
 dialog.addEventListener('close', () => {
   if (dialog.returnValue !== 'save') return;
   const name = $<HTMLInputElement>('#space-name').value.trim();
-  const emoji = $<HTMLInputElement>('#space-emoji').value.trim() || '✨';
   if (!name) return;
   const separateCookies = $<HTMLInputElement>('#space-separate').checked;
-  if (editing) run({ type: 'editSpace', spaceId: editing.id, name, emoji, hue: chosenHue, separateCookies });
-  else run({ type: 'addSpace', windowId, name, emoji, hue: chosenHue, separateCookies });
+  if (editing) run({ type: 'editSpace', spaceId: editing.id, name, hue: chosenHue, separateCookies });
+  else run({ type: 'addSpace', windowId, name, hue: chosenHue, separateCookies });
 });
 $('#space-delete').addEventListener('click', () => {
   if (editing) run({ type: 'deleteSpace', spaceId: editing.id });
@@ -388,9 +407,10 @@ function render() {
   spacesBar.replaceChildren(...data.spaces.map((s) => {
     const button = el('button', {
       className: `space${s.id === space.id ? ' current' : ''}${s.separateCookies ? ' separate' : ''}`,
-      textContent: s.emoji,
+      textContent: spaceInitial(s.name),
       title: s.separateCookies ? `${s.name} · ${t('sidebarSeparateCookiesBadge')}` : s.name,
     });
+    button.style.setProperty('--h', String(s.hue));
     button.addEventListener('click', () => run({ type: 'switchSpace', windowId, spaceId: s.id }));
     button.addEventListener('dblclick', () => editSpace(s));
     button.addEventListener('contextmenu', (e) => openMenu(e, spaceMenu(s)));

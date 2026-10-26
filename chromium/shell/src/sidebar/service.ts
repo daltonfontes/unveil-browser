@@ -36,8 +36,8 @@ export type SidebarCommand =
   | { type: 'moveTab'; tabId: number; toIndex: number }
   | { type: 'moveToSpace'; tabId: number; spaceId: string }
   | { type: 'switchSpace'; windowId: number; spaceId: string }
-  | { type: 'addSpace'; windowId: number; name: string; emoji: string; hue: number; separateCookies?: boolean }
-  | { type: 'editSpace'; spaceId: string; name: string; emoji: string; hue: number; separateCookies?: boolean }
+  | { type: 'addSpace'; windowId: number; name: string; hue: number; separateCookies?: boolean }
+  | { type: 'editSpace'; spaceId: string; name: string; hue: number; separateCookies?: boolean }
   | { type: 'deleteSpace'; spaceId: string }
   | { type: 'clearSpaceCookies'; spaceId: string }
   | { type: 'reopenArchived'; windowId: number; index: number }
@@ -327,15 +327,15 @@ async function run(command: SidebarCommand): Promise<unknown> {
     case 'addSpace': {
       const id = newId();
       await updateData((d) => {
-        d.spaces.push({ id, name: command.name, emoji: command.emoji, hue: command.hue, separateCookies: !!command.separateCookies });
+        d.spaces.push({ id, name: command.name, hue: command.hue, separateCookies: !!command.separateCookies });
       });
       return run({ type: 'switchSpace', windowId: command.windowId, spaceId: id });
     }
     case 'editSpace': {
-      const { name, emoji, hue, separateCookies } = command;
+      const { name, hue, separateCookies } = command;
       await updateData((d) => {
         const space = d.spaces.find((s) => s.id === command.spaceId);
-        if (space) Object.assign(space, { name, emoji, hue, ...(separateCookies === undefined ? {} : { separateCookies }) });
+        if (space) Object.assign(space, { name, hue, ...(separateCookies === undefined ? {} : { separateCookies }) });
       });
       // Separate cookies on or off: its tabs open again in the other partition.
       return reconcile(await tabsOfSpace(command.spaceId));

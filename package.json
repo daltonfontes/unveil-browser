@@ -1,7 +1,7 @@
 {
   "name": "unveil",
   "productName": "Unveil",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "license": "BSD-3-Clause",
   "description": "A light Chromium fork for Windows with no tracking.",

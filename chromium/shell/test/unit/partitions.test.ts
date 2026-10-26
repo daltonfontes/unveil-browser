@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { canReopen, partitionFor } from '../../src/lib/partitions.ts';
 
-const space = { id: 'work', name: 'Work', emoji: '💼', hue: 210 };
+const space = { id: 'work', name: 'Work', hue: 210 };
 
 test('a Space with separate cookies has a partition of its own, named after it', () => {
   assert.equal(partitionFor({ ...space, separateCookies: true }, true), 'work');

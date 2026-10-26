@@ -17,7 +17,7 @@ import {
 const HOUR = 60 * 60 * 1000;
 const data: SidebarData = {
   ...DEFAULT_DATA,
-  spaces: [{ id: 'home', name: 'Home', emoji: '🏠', hue: 1 }, { id: 'work', name: 'Work', emoji: '💼', hue: 2 }],
+  spaces: [{ id: 'home', name: 'Home', hue: 1 }, { id: 'work', name: 'Work', hue: 2 }],
   favorites: [{ id: 'f1', url: 'https://mail.example/', title: 'Mail' }],
   pinned: { work: [{ id: 'p1', url: 'https://github.com/', title: 'GitHub' }] },
 };

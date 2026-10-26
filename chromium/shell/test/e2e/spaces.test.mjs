@@ -103,7 +103,6 @@ test('a Space with separate cookies opens its tabs in its own partition', async 
   await sidebar.locator('#add-space').click();
   assert.ok(!(await sidebar.locator('#space-separate').isDisabled()));
   await sidebar.fill('#space-name', 'Work');
-  await sidebar.fill('#space-emoji', '💼');
   await sidebar.locator('#space-separate').check();
   await sidebar.locator('#space-dialog button[value=save]').click();
   await eventually(async () => (await workSpace())?.separateCookies === true, 'Work has separate cookies');
@@ -146,14 +145,14 @@ test('Peek in such a Space opens a tab in its partition: a popup window can\'t b
 
 test('"Sign out of everything in this Space" clears its partition', async () => {
   const work = (await workSpace()).id;
-  await sidebar.locator('.space', { hasText: '💼' }).click({ button: 'right' });
+  await sidebar.locator('.space[title^="Work"]').click({ button: 'right' });
   await sidebar.locator('#menu button', { hasText: 'Sign out of everything in this Space' }).click();
   await eventually(async () => (await worker.evaluate(() => cleared)).includes(work), 'cleared');
 });
 
 test('turning separate cookies off moves its tabs back to the profile\'s storage; deleting it clears it', async () => {
   const work = (await workSpace()).id;
-  await sidebar.locator('.space', { hasText: '💼' }).dblclick();
+  await sidebar.locator('.space[title^="Work"]').dblclick();
   await sidebar.locator('#space-separate').uncheck();
   await sidebar.locator('#space-dialog button[value=save]').click();
   await eventually(async () => (await tabs()).every((t) => t.partition === ''), async () => `tabs: ${JSON.stringify(await tabs())}`);

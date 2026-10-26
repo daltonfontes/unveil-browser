@@ -35,7 +35,8 @@ h2 { font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: u
 .row img.icon { border-radius: 3px; }
 .row .title { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .row.unloaded .title { color: var(--muted); }
-.row .audio { font-size: 11px; }
+.row .audio { display: grid; color: var(--muted); }
+.line-icon svg, svg.line-icon { fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
 .row .close { flex: none; width: 20px; height: 20px; border: 0; border-radius: 5px; background: none; color: var(--muted); display: none; line-height: 1; }
 .row:hover .close, .row.active .close { display: block; }
 .row .close:hover { background: var(--row-hover); color: var(--text); }
@@ -54,11 +55,13 @@ h2 { font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: u
 
 footer { display: flex; align-items: center; gap: 4px; padding: 8px 2px 10px; border-top: 1px solid hsl(var(--hue) 20% 50% / .2); }
 .spaces { flex: 1; display: flex; justify-content: center; gap: 2px; overflow-x: auto; }
-.space, .footer-button { width: 30px; height: 30px; border: 0; border-radius: 8px; background: none; font-size: 15px; display: grid; place-items: center; flex: none; }
+.space, .footer-button { width: 30px; height: 30px; border: 0; border-radius: 8px; background: none; color: var(--text); display: grid; place-items: center; flex: none; }
 .space:hover, .footer-button:hover { background: var(--row-hover); }
 .space.current { background: var(--row-active); box-shadow: var(--row-active-shadow); }
-/* A Space with separate cookies: a line under its emoji. */
-.space.separate { position: relative; }
+/* A Space: its initial on a dot of its hue. */
+.space { position: relative; isolation: isolate; color: white; font-size: 11px; font-weight: 600; }
+.space::before { content: ""; position: absolute; inset: 6px; z-index: -1; border-radius: 50%; background: hsl(var(--h) 45% 50%); }
+/* A Space with separate cookies: a line under its dot. */
 .space.separate::after { content: ""; position: absolute; bottom: 3px; width: 10px; height: 2px; border-radius: 1px; background: hsl(var(--hue) 55% 45%); }
 .footer-button.on { background: var(--row-active); }
 

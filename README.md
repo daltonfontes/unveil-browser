@@ -19,7 +19,7 @@ O [Flecha](https://flecha.dev/pt-br/) mostrou que dá para fazer um navegador pr
 - **Favoritos** no topo, como ícones, em todos os Spaces. Clicar abre a página ou volta para a aba que já está aberta.
 - **Fixadas**: páginas salvas em cada Space. Fechar uma fixada fecha a aba, mas a entrada continua lá para reabrir.
 - **Hoje**: as outras abas do Space. As que ficam paradas vão sozinhas para o **arquivo**, depois de 12 horas por padrão (1 dia, 7 dias, 30 dias ou nunca). O arquivo tem busca e reabre a aba com um clique.
-- **Spaces** com nome, emoji e cor, que tinge a barra. Cada janela mostra um Space, e as abas dos outros ficam abertas fora de vista. Troque pelos botões no rodapé ou com Alt+Shift+↑/↓.
+- **Spaces** com nome e cor, que tinge a barra; no rodapé, cada um aparece como a inicial do nome numa bolinha da sua cor. Cada janela mostra um Space, e as abas dos outros ficam abertas fora de vista. Troque pelos botões no rodapé ou com Alt+Shift+↑/↓.
 - **Cookies e logins separados por Space**, como no Flecha: marque a opção ao criar ou editar um Space e os sites dele ganham cookies, armazenamento e cache próprios, guardados no disco. Dá para entrar com uma conta do trabalho num Space e com a pessoal em outro, na mesma janela. Mover uma aba para um Space com outros cookies reabre a aba lá, no mesmo endereço. O botão direito no Space tem "Sair de todas as contas deste Space", e excluir o Space apaga os dados dele.
 - **Ctrl+Shift+S** recolhe a barra e a traz de volta, e o botão ⇤ no rodapé também recolhe. Recolhida, a página ocupa a janela toda ([prévia](docs/screenshots/window-collapsed-light.png)). Dá para trocar o atalho em `chrome://extensions/shortcuts`.
 - **Split view**: duas abas lado a lado na mesma janela ([prévia](docs/screenshots/window-split-light.png)), usando o split view do próprio Chromium, com a divisória arrastável. Clique com o botão direito numa aba e escolha "Abrir em split view com a aba atual", ou aperte **Alt+Shift+S** para abrir uma aba nova ao lado da atual (o mesmo atalho desfaz o split). Na barra, as duas metades dividem uma linha.
@@ -206,6 +206,8 @@ Os patches ficam pequenos e com um assunto cada, para que atualizar o Chromium c
 | 0010 | A barra ocupa o painel lateral inteiro, sem o cabeçalho do Chromium (título, fixar e fechar) |
 | 0011 | `chrome.unveilPrivate`, só para a shell: abrir uma aba numa partição de armazenamento, saber em qual partição uma aba está e apagar uma partição |
 | 0012 | Cookies separados por Space: abas e janelas que uma página abre ficam na partição dela, e a limpeza de partições do Chromium não apaga as dos Spaces |
+| 0013 | No Linux, pasta de perfil própria (`~/.config/unveil`) em vez da do Chromium |
+| 0014 | Sem o botão de perfil nas janelas normais: sem login no Google, ele só mostrava "Erro" (anônima e visitante continuam com o selo) |
 
 Os patches 0011 e 0012 seguem os patches 0010 e 0034 do Flecha. Cada Space com cookies separados é uma `StoragePartition` persistente (`SiteInstance::CreateForFixedStoragePartition`), em `<perfil>/Storage/ext/unveil-space/`. É uma partição e não um perfil por Space porque um perfil tem extensões e janelas próprias: a barra e os Spaces teriam que ser divididos entre perfis, e as abas de Spaces diferentes não poderiam ficar na mesma janela.
 

@@ -12,10 +12,22 @@ on:
       platforms:
         description: What to build
         type: choice
-        options: [all, linux, windows]
+        options: [all, linux, windows, none]
         default: all
       resume_from:
         description: Carry on from the build tree a stage of this earlier run saved (its run ID), instead of from scratch
+        type: string
+        default: ""
+      release_tag:
+        description: "Publish a release with this tag (e.g. v0.1.0) from the packages of the two runs below, without building (What to build: none)"
+        type: string
+        default: ""
+      release_linux_run:
+        description: Run ID whose unveil-linux-x64 package goes in the release
+        type: string
+        default: ""
+      release_windows_run:
+        description: Run ID whose unveil-windows-x64 packages go in the release
         type: string
         default: ""
   push:
@@ -35,7 +47,7 @@ jobs:
     name: Linux, stage 1
     runs-on: ubuntu-24.04
     timeout-minutes: 355
-    if: inputs.platforms != 'windows'
+    if: inputs.platforms != 'windows' && inputs.platforms != 'none'
     outputs:
       status: ${{ steps.stage.outputs.status }}
     steps:
@@ -187,7 +199,7 @@ jobs:
     name: Windows, stage 1
     runs-on: windows-2025
     timeout-minutes: 355
-    if: inputs.platforms != 'linux'
+    if: inputs.platforms != 'linux' && inputs.platforms != 'none'
     outputs:
       status: ${{ steps.stage.outputs.status }}
     steps:
@@ -388,3 +400,40 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           gh release create "$TAG" dist/* --repo "$GITHUB_REPOSITORY" --title "Unveil ${TAG#v}" --generate-notes
+
+  publish:
+    # A release from packages earlier runs built (release_tag): the tag is
+    # made here, on this commit, so pushing a tag isn't needed (and starts no
+    # new build).
+    name: Publish a release from earlier runs
+    if: github.event_name == 'workflow_dispatch' && inputs.release_tag != ''
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: unveil-linux-x64
+          path: dist
+          run-id: ${{ inputs.release_linux_run }}
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v8
+        with:
+          name: unveil-windows-x64
+          path: dist
+          run-id: ${{ inputs.release_windows_run }}
+          github-token: ${{ github.token }}
+      - name: Check the packages
+        working-directory: dist
+        run: |
+          ls -la
+          sha256sum -c SHA256SUMS-linux.txt
+          tr -d '\r' < SHA256SUMS.txt | sha256sum -c
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.release_tag }}
+        run: |
+          gh release create "$TAG" dist/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "Unveil ${TAG#v}" --generate-notes

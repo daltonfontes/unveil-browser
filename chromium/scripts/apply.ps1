@@ -25,9 +25,43 @@ Push-Location $ChromiumSrc
 try {
   # The source tarball (win\fetch-tarball.ps1) isn't a git checkout, so it
   # can't be undone: it is applied once (fetch-tarball.ps1 unpacks a fresh
-  # source after a version change).
+  # source after a version change). .unveil-applied lists the patches
+  # applied, with their sha256: on a source patched before (a resumed CI
+  # build) only the patches that came after are added, so a fix needs no
+  # build from scratch. A patch that changed needs a fresh source.
   $isGit = Test-Path '.git'
-  if (-not $isGit -and (Test-Path '.unveil-applied')) {
+  $stamp = '.unveil-applied'
+  if (-not $isGit -and (Test-Path $stamp)) {
+    $recorded = @{}
+    foreach ($line in (Get-Content $stamp)) {
+      $name, $sum = $line -split ' ', 2
+      if ($name) { $recorded[$name] = $sum }
+    }
+    # An older stamp is empty: then a patch is new only if it applies and
+    # isn't applied already (some patches would apply twice).
+    $legacy = $recorded.Count -eq 0
+    foreach ($patch in $patches) {
+      $sum = (Get-FileHash $patch.FullName -Algorithm SHA256).Hash.ToLower()
+      if ($recorded.ContainsKey($patch.Name)) {
+        if ($recorded[$patch.Name] -eq $sum) { continue }
+        throw "$($patch.Name) changed after $ChromiumSrc was patched: it needs a fresh source"
+      }
+      $new = $true
+      if ($legacy) {
+        $ErrorActionPreference = 'Continue'
+        & git -c core.autocrlf=false apply --check $patch.FullName 2>$null
+        $applies = $LASTEXITCODE -eq 0
+        & git -c core.autocrlf=false apply --reverse --check $patch.FullName 2>$null
+        $applied = $LASTEXITCODE -eq 0
+        $ErrorActionPreference = 'Stop'
+        $new = $applies -and -not $applied
+      }
+      if ($new) {
+        Write-Host "patch (new since this source was patched): $($patch.Name)"
+        Invoke-Checked git -c core.autocrlf=false apply $patch.FullName
+      }
+      Add-Content $stamp "$($patch.Name) $sum"
+    }
     Use-LF
     Write-Host "Unveil is already applied to $ChromiumSrc"
     return
@@ -62,7 +96,10 @@ try {
   Use-LF
 
   Invoke-Checked node (Join-Path $PSScriptRoot 'rebrand.mjs') $ChromiumSrc
-  if (-not $isGit) { New-Item -ItemType File '.unveil-applied' | Out-Null }
+  if (-not $isGit) {
+    $patches | ForEach-Object { "$($_.Name) $((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower())" } |
+      Set-Content $stamp
+  }
 } finally { Pop-Location }
 
 Write-Host "Unveil applied to $ChromiumSrc"

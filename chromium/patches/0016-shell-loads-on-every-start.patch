@@ -1,0 +1,19 @@
+--- a/chrome/browser/extensions/component_loader.cc
++++ b/chrome/browser/extensions/component_loader.cc
+@@ -650,6 +650,16 @@ void ComponentLoader::AddUnveilShellExtension() {
+ 
+ void ComponentLoader::FinishAddUnveilShell(
+     std::pair<base::FilePath, std::optional<base::DictValue>> shell) {
++  // LoadAll() runs before the extension system is ready, and Add() loads
++  // only once it is: a shell that arrives in between (a copy made on an
++  // earlier run) would be listed but never loaded. Wait for ready instead.
++  if (!extension_system_->is_ready()) {
++    extension_system_->ready().Post(
++        FROM_HERE,
++        base::BindOnce(&ComponentLoader::FinishAddUnveilShell,
++                       weak_factory_.GetWeakPtr(), std::move(shell)));
++    return;
++  }
+   auto& [dir, manifest] = shell;
+   if (!manifest) {
+     return;

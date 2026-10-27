@@ -1,0 +1,17 @@
+--- a/extensions/browser/api/declarative_net_request/rules_monitor_service.cc
++++ b/extensions/browser/api/declarative_net_request/rules_monitor_service.cc
+@@ -601,6 +601,14 @@ void RulesMonitorService::OnExtensionLoaded(
+ 
+       if (!helper.GetStaticRulesetChecksum(extension->id(), source.id(),
+                                            expected_ruleset_checksum)) {
++        // Unveil: a component extension (Unveil's shell) is never installed,
++        // so its rulesets have no checksum until they are first indexed. Load
++        // them without one: the file sequence indexes them and the checksum
++        // goes into prefs, instead of a "failed to load" warning.
++        if (Manifest::IsComponentLocation(extension->location())) {
++          load_data.rulesets.emplace_back(std::move(source));
++          continue;
++        }
+         // This might happen on prefs corruption.
+         LogLoadRulesetResult(LoadRulesetResult::kErrorChecksumNotFound);
+         ruleset_failed_to_load = true;

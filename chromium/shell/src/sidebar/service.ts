@@ -428,12 +428,15 @@ async function adoptOpenTabs(data: SidebarData) {
   await reconcile(tabs.map((t) => t.id!).filter((id) => id !== undefined));
 }
 
+/** The tabs and windows already open when the shell starts: background.ts. */
+export async function adoptOpenWindows() {
+  await adoptOpenTabs(await getData());
+}
+
 export function startSidebar() {
   void chrome.sidePanel.setOptions({ path: 'sidebar.html', enabled: true });
   void chrome.alarms.create(ARCHIVE_ALARM, { periodInMinutes: 10 });
 
-  chrome.runtime.onStartup.addListener(async () => adoptOpenTabs(await getData()));
-  chrome.runtime.onInstalled.addListener(async () => adoptOpenTabs(await getData()));
 
   chrome.alarms.onAlarm.addListener((alarm) => {
     if (alarm.name === ARCHIVE_ALARM) void archive();

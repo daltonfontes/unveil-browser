@@ -207,7 +207,9 @@ Os patches ficam pequenos e com um assunto cada, para que atualizar o Chromium c
 | 0011 | `chrome.unveilPrivate`, só para a shell: abrir uma aba numa partição de armazenamento, saber em qual partição uma aba está e apagar uma partição |
 | 0012 | Cookies separados por Space: abas e janelas que uma página abre ficam na partição dela, e a limpeza de partições do Chromium não apaga as dos Spaces |
 | 0013 | No Linux, pasta de perfil própria (`~/.config/unveil`) em vez da do Chromium |
-| 0014 | Sem o botão de perfil nas janelas normais: sem login no Google, ele só mostrava "Erro" (anônima e visitante continuam com o selo) |
+| 0014 | Sem o botão de perfil nas janelas normais: sem login no Google ele não tem uso, e os Spaces fazem o papel dos perfis (anônima e visitante continuam com o selo) |
+| 0015 | As listas de bloqueio da shell carregam desde a primeira abertura: o Chromium indexa as regras de uma extensão interna em vez de mostrar "Extension error" no menu |
+| 0016 | A shell carrega em toda abertura, não só na primeira: quando a cópia dela já existe, espera o sistema de extensões ficar pronto antes de entrar |
 
 Os patches 0011 e 0012 seguem os patches 0010 e 0034 do Flecha. Cada Space com cookies separados é uma `StoragePartition` persistente (`SiteInstance::CreateForFixedStoragePartition`), em `<perfil>/Storage/ext/unveil-space/`. É uma partição e não um perfil por Space porque um perfil tem extensões e janelas próprias: a barra e os Spaces teriam que ser divididos entre perfis, e as abas de Spaces diferentes não poderiam ficar na mesma janela.
 

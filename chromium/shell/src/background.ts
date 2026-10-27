@@ -4,9 +4,10 @@
 // build.mjs), so blocking costs no JavaScript per request: Chromium matches
 // them natively.
 
+import { firstRunThisSession } from './lib/sessionStart.ts';
 import { getSettings, RULESETS, type Settings } from './lib/settings.ts';
 import { startPeek } from './peek/service.ts';
-import { startSidebar } from './sidebar/service.ts';
+import { adoptOpenWindows, startSidebar } from './sidebar/service.ts';
 
 // Above every list rule (abp2dnr.mjs PRIORITY), so a site switched off in the
 // popup loads with nothing blocked or rewritten.
@@ -69,10 +70,7 @@ function apply() {
 chrome.runtime.onInstalled.addListener(() => {
   chrome.declarativeNetRequest.setExtensionActionOptions({ displayActionCountAsBadgeText: true });
   chrome.action.setBadgeBackgroundColor({ color: '#0d4f5c' });
-  void apply();
 });
-
-chrome.runtime.onStartup.addListener(() => void apply());
 
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== 'local') return;
@@ -84,3 +82,10 @@ chrome.storage.onChanged.addListener((changes, area) => {
 
 startSidebar();
 startPeek();
+
+// A browser start, an install or an update (lib/sessionStart.ts).
+void firstRunThisSession().then((first) => {
+  if (!first) return;
+  void apply();
+  void adoptOpenWindows();
+});

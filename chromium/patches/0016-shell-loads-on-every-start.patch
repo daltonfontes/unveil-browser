@@ -1,6 +1,14 @@
 --- a/chrome/browser/extensions/component_loader.cc
 +++ b/chrome/browser/extensions/component_loader.cc
-@@ -650,6 +650,16 @@ void ComponentLoader::AddUnveilShellExtension() {
+@@ -18,6 +18,7 @@
+ #include "base/json/json_reader.h"
+ #include "base/logging.h"
+ #include "base/metrics/histogram_macros.h"
++#include "base/one_shot_event.h"
+ #include "base/path_service.h"
+ #include "base/time/time.h"
+ #include "base/trace_event/trace_event.h"
+@@ -650,6 +651,16 @@ void ComponentLoader::AddUnveilShellExtension() {
  
  void ComponentLoader::FinishAddUnveilShell(
      std::pair<base::FilePath, std::optional<base::DictValue>> shell) {
